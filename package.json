@@ -1,0 +1,13 @@
+{
+  "name": "auracraft",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AuraCraft — premium jewellery, perfume and gift e-commerce (React + Node + MySQL)",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "setup": "npm run install:all && npm --prefix backend run db:reset",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build"
+  }
+}
