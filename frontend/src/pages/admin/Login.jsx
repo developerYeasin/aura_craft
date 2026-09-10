@@ -3,7 +3,6 @@ import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Field } from '../../components/ui/index.jsx';
-import { IconSparkle } from '../../components/ui/Icons.jsx';
 
 const Login = () => {
   const { login, user, loading } = useAuth();
@@ -37,9 +36,7 @@ const Login = () => {
     <div className="login-page">
       <div className="card card--pad login-card">
         <Link to="/" className="brand" style={{ justifyContent: 'center', marginBottom: 10 }}>
-          <span className="brand__mark">
-            <IconSparkle width={19} height={19} />
-          </span>
+          <span className="brand__mark" aria-hidden="true">A</span>
           <span className="brand__text">AuraCraft</span>
         </Link>
         <div className="text-center" style={{ marginBottom: 22 }}>

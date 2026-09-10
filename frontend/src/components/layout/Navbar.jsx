@@ -3,9 +3,10 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext.jsx';
 import { useCart } from '../../context/CartContext.jsx';
 import { useWishlist } from '../../hooks/useWishlist.js';
+import { useTheme } from '../../hooks/useTheme.js';
 import {
-  IconCart, IconSearch, IconUser, IconMenu, IconClose, IconHeart,
-  IconStore, IconGrid, IconSparkle, IconUsers,
+  IconCart, IconSearch, IconUser, IconMenu, IconClose, IconHeart, IconSun, IconMoon,
+  IconStore, IconGrid, IconUsers,
   IconPlus, IconTruck, categoryIcon,
 } from '../ui/Icons.jsx';
 
@@ -26,6 +27,7 @@ const Navbar = () => {
   const { navCategories, settings } = useStore();
   const { count } = useCart();
   const wishlist = useWishlist();
+  const { theme, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -90,9 +92,7 @@ const Navbar = () => {
       <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
         <div className="container nav__inner">
           <Link to="/" className="brand">
-            <span className="brand__mark">
-              <IconSparkle width={19} height={19} />
-            </span>
+            <span className="brand__mark" aria-hidden="true">A</span>
             <span>
               <span className="brand__text">{settings.site_name || 'AuraCraft'}</span>
               <span className="brand__sub">Elegance</span>
@@ -100,6 +100,16 @@ const Navbar = () => {
           </Link>
 
           <nav className="nav__links">
+            <div className="drawer__tools">
+              <button type="button" className="btn btn--sm" onClick={toggleTheme}>
+                {theme === 'dark' ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
+                {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+              </button>
+              <Link to="/wishlist" className="btn btn--sm" onClick={() => setDrawerOpen(false)}>
+                <IconHeart width={15} height={15} /> পছন্দের তালিকা
+                {wishlist.count > 0 && ` (${wishlist.count})`}
+              </Link>
+            </div>
             {links.map((link) => (
               <NavLink
                 key={link.to}
@@ -116,11 +126,20 @@ const Navbar = () => {
             <button type="button" className="nav__btn" onClick={() => setSearchOpen((v) => !v)} aria-label="সার্চ">
               {searchOpen ? <IconClose /> : <IconSearch />}
             </button>
-            <Link to="/wishlist" className="nav__btn" aria-label="পছন্দের তালিকা">
+            <button
+              type="button"
+              className="nav__btn nav__btn--tuck"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'লাইট মোড চালু করুন' : 'ডার্ক মোড চালু করুন'}
+              title={theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+            >
+              {theme === 'dark' ? <IconSun /> : <IconMoon />}
+            </button>
+            <Link to="/wishlist" className="nav__btn nav__btn--tuck" aria-label="পছন্দের তালিকা">
               <IconHeart />
               {wishlist.count > 0 && <span className="nav__count">{wishlist.count}</span>}
             </Link>
-            <Link to="/track" className="nav__btn" aria-label="অর্ডার ট্র্যাক">
+            <Link to="/track" className="nav__btn nav__btn--tuck" aria-label="অর্ডার ট্র্যাক">
               <IconUser />
             </Link>
             <Link to="/cart" className="nav__btn" aria-label="কার্ট">
@@ -170,6 +189,16 @@ const Navbar = () => {
               <button type="button" className="nav__btn" onClick={() => setDrawerOpen(false)} aria-label="বন্ধ">
                 <IconClose />
               </button>
+            </div>
+            <div className="drawer__tools">
+              <button type="button" className="btn btn--sm" onClick={toggleTheme}>
+                {theme === 'dark' ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
+                {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+              </button>
+              <Link to="/wishlist" className="btn btn--sm" onClick={() => setDrawerOpen(false)}>
+                <IconHeart width={15} height={15} /> পছন্দের তালিকা
+                {wishlist.count > 0 && ` (${wishlist.count})`}
+              </Link>
             </div>
             {links.map((link) => (
               <NavLink

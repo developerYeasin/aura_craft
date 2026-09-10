@@ -3,8 +3,9 @@ import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader } from '../ui/index.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import { useTheme } from '../../hooks/useTheme.js';
 import {
-  IconSparkle, IconLogout, IconMenu, IconClose, IconDashboard, IconGem, IconFolder,
+  IconLogout, IconMenu, IconClose, IconSun, IconMoon, IconDashboard, IconGem, IconFolder,
   IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore,
 } from '../ui/Icons.jsx';
 
@@ -22,6 +23,7 @@ const AdminLayout = () => {
   const { user, loading, logout, isImmortal } = useAuth();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   if (loading) return <Loader label="যাচাই করা হচ্ছে…" />;
   if (!user) return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
@@ -32,9 +34,7 @@ const AdminLayout = () => {
     <div className="admin">
       <aside className={`admin__side${open ? ' is-open' : ''}`}>
         <Link to="/" className="brand" style={{ padding: '4px 10px 18px' }}>
-          <span className="brand__mark">
-            <IconSparkle width={18} height={18} />
-          </span>
+          <span className="brand__mark" aria-hidden="true">A</span>
           <span>
             <span className="brand__text">AuraCraft</span>
             <span className="brand__sub">Admin</span>
@@ -86,6 +86,15 @@ const AdminLayout = () => {
             aria-label="মেনু"
           >
             {open ? <IconClose /> : <IconMenu />}
+          </button>
+          <button
+            type="button"
+            className="nav__btn"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'লাইট মোড চালু করুন' : 'ডার্ক মোড চালু করুন'}
+            title={theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+          >
+            {theme === 'dark' ? <IconSun /> : <IconMoon />}
           </button>
           <NotificationBell />
         </div>

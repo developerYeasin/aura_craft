@@ -181,10 +181,10 @@ const ProductDetails = () => {
                   </button>
                 </div>
                 <button type="button" className="btn btn--primary" onClick={orderNow} disabled={outOfStock}>
-                  Order Now <IconArrowRight width={15} height={15} />
+                  অর্ডার করুন <IconArrowRight width={15} height={15} />
                 </button>
                 <button type="button" className="btn btn--outline" onClick={addToCart} disabled={outOfStock}>
-                  <IconCart width={15} height={15} /> Add to Cart
+                  <IconCart width={15} height={15} /> কার্টে যোগ করুন
                 </button>
                 <button
                   type="button"
@@ -298,7 +298,7 @@ const ProductDetails = () => {
               <IconCart width={14} height={14} /> Add
             </button>
             <button type="button" className="btn btn--primary btn--sm" onClick={orderNow}>
-              Order Now
+              অর্ডার করুন
             </button>
           </div>
         </div>

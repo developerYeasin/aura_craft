@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useWishlist } from '../../hooks/useWishlist.js';
 import { money, discountPercent, imageOf, toBn } from '../../utils/format.js';
 import { IconHeart, IconCart, IconEye, IconArrowRight } from '../ui/Icons.jsx';
+import { Rating } from '../ui/index.jsx';
 
 const ProductCard = ({ product, compact = false }) => {
   const { add } = useCart();
@@ -36,7 +37,7 @@ const ProductCard = ({ product, compact = false }) => {
         </Link>
 
         <div className="pcard__flags">
-          {off > 0 && <span className="badge badge--pink">-{toBn(off)}%</span>}
+          {off > 0 && <span className="badge badge--solid">-{toBn(off)}%</span>}
           {product.is_featured === 1 && <span className="badge badge--gold">ফিচার্ড</span>}
           {outOfStock && <span className="badge badge--danger">স্টক নেই</span>}
           {lowStock && <span className="badge badge--warn">শেষ {toBn(product.stock)} টি</span>}
@@ -56,15 +57,15 @@ const ProductCard = ({ product, compact = false }) => {
         <div className="pcard__hover">
           {compact ? (
             <button type="button" className="btn btn--primary" onClick={orderNow} disabled={outOfStock}>
-              Order Now <IconArrowRight width={14} height={14} />
+              অর্ডার করুন <IconArrowRight width={14} height={14} />
             </button>
           ) : (
             <>
               <Link to={`/product/${product.slug}`} className="btn btn--outline">
-                <IconEye width={14} height={14} /> Details
+                <IconEye width={14} height={14} /> বিস্তারিত
               </Link>
               <button type="button" className="btn btn--primary" onClick={addToCart} disabled={outOfStock}>
-                <IconCart width={14} height={14} /> Add
+                <IconCart width={14} height={14} /> কার্টে
               </button>
             </>
           )}
@@ -76,6 +77,9 @@ const ProductCard = ({ product, compact = false }) => {
         <Link to={`/product/${product.slug}`} className="pcard__name">
           {product.name}
         </Link>
+        {Number(product.rating) > 0 && (
+          <Rating value={Number(product.rating)} count={product.rating_count} />
+        )}
         <div className="pcard__price">
           <b>{money(product.price)}</b>
           {off > 0 && <s>{money(product.compare_price)}</s>}

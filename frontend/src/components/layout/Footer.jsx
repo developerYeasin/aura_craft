@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext.jsx';
 import {
   IconFacebook, IconInstagram, IconYoutube, IconTwitter,
-  IconPhone, IconMail, IconPin, IconSparkle,
+  IconPhone, IconMail, IconPin,
 } from '../ui/Icons.jsx';
 
 const Footer = () => {
@@ -21,9 +21,7 @@ const Footer = () => {
         <div className="footer__grid">
           <div>
             <Link to="/" className="brand" style={{ marginBottom: 14 }}>
-              <span className="brand__mark">
-                <IconSparkle width={18} height={18} />
-              </span>
+              <span className="brand__mark" aria-hidden="true">A</span>
               <span>
                 <span className="brand__text">{settings.site_name}</span>
                 <span className="brand__sub">{settings.site_tagline}</span>
@@ -95,7 +93,7 @@ const Footer = () => {
 
         <div className="footer__bottom">
           <span>© {new Date().getFullYear()} {settings.site_name}. All rights reserved.</span>
-          <span>Made with 💗 in Bangladesh</span>
+          <span>ঢাকা, বাংলাদেশ থেকে পরিচালিত</span>
         </div>
       </div>
     </footer>

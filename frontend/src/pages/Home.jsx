@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 import { productApi } from '../api/index.js';
 import { useStore } from '../context/StoreContext.jsx';
 import ProductCard from '../components/product/ProductCard.jsx';
-import { Loader, ErrorBox, Reveal, Empty, SectionHead, Marquee } from '../components/ui/index.jsx';
+import { Loader, ErrorBox, Reveal, Empty, SectionHead } from '../components/ui/index.jsx';
 import {
   IconArrowRight, IconPlus, IconShield, IconGem, IconLock, IconTruck, IconHeadset,
-  IconAward, IconHandshake, IconChat, IconWallet, IconBadgeCheck, IconRefresh,
-  IconSparkle, IconBox, IconStar, categoryIcon,
+  IconAward, IconHandshake, IconChat, IconWallet, IconRefresh, IconBox, categoryIcon,
 } from '../components/ui/Icons.jsx';
 import { imageOf, toBn } from '../utils/format.js';
 
@@ -27,17 +26,8 @@ const WHY = [
   { Icon: IconRefresh, title: '৭ দিনে রিপ্লেসমেন্ট', text: 'সমস্যা থাকলে বদলে দেওয়া হয়' },
 ];
 
-const MARQUEE = [
-  { icon: IconSparkle, label: 'Handpicked Jewellery' },
-  { icon: IconBadgeCheck, label: '১০০% অরিজিনাল' },
-  { icon: IconTruck, label: 'Fast Delivery' },
-  { icon: IconGem, label: 'Premium Quality' },
-  { icon: IconWallet, label: 'Cash on Delivery' },
-  { icon: IconRefresh, label: '৭ দিনে রিপ্লেসমেন্ট' },
-];
-
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1200&q=80';
-const OFFER_IMAGE = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=900&q=80';
+const HERO_IMAGE = 'https://images.unsplash.com/photo-1596944924616-7b38e7cfac36?auto=format&fit=crop&w=2000&q=80';
+const OFFER_IMAGE = 'https://images.unsplash.com/photo-1584302179602-e4c3d3fd629d?auto=format&fit=crop&w=900&q=80';
 
 /** Splits "আপনার স্টাইল, আমাদের অনন্যতা" into a normal + italic gradient half. */
 const splitTitle = (title = '') => {
@@ -71,23 +61,26 @@ const Home = () => {
 
   return (
     <>
-      {/* ============================================ HERO */}
-      <section className="container">
-        <div className="hero">
-          <div className="hero__copy">
+      {/* ============================================ COVER */}
+      <section className="cover">
+        <img className="cover__img" src={HERO_IMAGE} alt="AuraCraft জুয়েলারি কালেকশন" fetchpriority="high" />
+        <span className="cover__veil" />
+
+        <div className="container cover__inner">
+          <div className="cover__copy">
             <Reveal>
               <span className="eyebrow">Premium Collection ’২৬</span>
             </Reveal>
             <Reveal delay={90}>
-              <h1 className="display t-hero hero__title">
+              <h1 className="display t-hero cover__title">
                 {first},<br />
                 <em>{second}</em>
               </h1>
             </Reveal>
             <Reveal delay={170}>
-              <p className="hero__sub">{settings.hero_subtitle}</p>
+              <p className="cover__sub">{settings.hero_subtitle}</p>
             </Reveal>
-            <Reveal delay={240} className="hero__cta">
+            <Reveal delay={240} className="cover__cta">
               <Link to="/products" className="btn btn--primary btn--lg">
                 এখনই কিনুন <IconArrowRight width={16} height={16} />
               </Link>
@@ -95,63 +88,30 @@ const Home = () => {
                 অর্ডার ট্র্যাক
               </Link>
             </Reveal>
-            <Reveal delay={310} className="hero__meta">
-              <div>
-                <b>{toBn(totalProducts || 29)}+</b>
-                <span>প্রোডাক্ট</span>
-              </div>
-              <div>
-                <b>{toBn(categories.length || 5)}</b>
-                <span>ক্যাটাগরি</span>
-              </div>
-              <div>
-                <b>৪.৮★</b>
-                <span>গড় রেটিং</span>
-              </div>
-            </Reveal>
           </div>
+        </div>
 
-          <div className="hero__visual">
-            <div className="hero__orb" />
-            <div className="hero__ring" />
-            <div className="hero__frame">
-              <img src={HERO_IMAGE} alt="AuraCraft premium ring" />
+        <div className="cover__bar">
+          <div className="container cover__stats">
+            <div>
+              <b>{toBn(totalProducts || 29)}+</b>
+              <span>প্রোডাক্ট</span>
             </div>
-
-            <div className="hero__chip hero__chip--a">
-              <i>
-                <IconBadgeCheck width={16} height={16} />
-              </i>
-              <div>
-                <b>১০০% অরিজিনাল</b>
-                <span>যাচাই করা পণ্য</span>
-              </div>
+            <div>
+              <b>{toBn(categories.length || 5)}</b>
+              <span>ক্যাটাগরি</span>
             </div>
-            <div className="hero__chip hero__chip--b">
-              <i>
-                <IconTruck width={16} height={16} />
-              </i>
-              <div>
-                <b>ফ্রি ডেলিভারি</b>
-                <span>৳৫,০০০+ অর্ডারে</span>
-              </div>
+            <div>
+              <b>৪.৮</b>
+              <span>গড় রেটিং</span>
             </div>
-            <div className="hero__chip hero__chip--c">
-              <i>
-                <IconStar width={15} height={15} />
-              </i>
-              <div>
-                <b>৪.৮ / ৫.০</b>
-                <span>কাস্টমার রেটিং</span>
-              </div>
+            <div>
+              <b>২৪ ঘণ্টা</b>
+              <span>ঢাকায় ডেলিভারি</span>
             </div>
           </div>
-
-          <p className="hero__script">স্টাইল মানেই নিজেকে প্রকাশ করা</p>
         </div>
       </section>
-
-      <Marquee items={MARQUEE} />
 
       {/* ============================================ TRUST */}
       <section className="container section--tight">
