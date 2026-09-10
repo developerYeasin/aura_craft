@@ -32,6 +32,12 @@ export const env = {
     password: process.env.ADMIN_PASSWORD || 'admin123',
   },
   uploadDir: path.resolve(__dirname, '../../uploads'),
+  // Platform-level COD fraud lookup: one key serves every shop on the install,
+  // so it lives in env rather than in a per-shop setting.
+  fraudApi: {
+    url: process.env.BDCOURIER_URL || 'https://bdcourier.com/api/courier-check',
+    key: process.env.FRAUD_API_KEY || '',
+  },
   vapid: {
     publicKey: process.env.VAPID_PUBLIC_KEY || '',
     privateKey: process.env.VAPID_PRIVATE_KEY || '',

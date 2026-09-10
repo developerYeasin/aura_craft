@@ -9,6 +9,11 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import settingRoutes from './modules/settings/setting.routes.js';
 import uploadRoutes from './modules/upload/upload.routes.js';
 import notificationRoutes from './modules/notifications/notification.routes.js';
+import courierRoutes from './modules/courier/courier.routes.js';
+import couponRoutes from './modules/coupons/coupon.routes.js';
+import customerRoutes from './modules/customers/customer.routes.js';
+import fraudRoutes from './modules/fraud/fraud.routes.js';
+import feedRoutes from './modules/marketing/feed.routes.js';
 
 const router = Router();
 
@@ -31,5 +36,12 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/settings', settingRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/courier', courierRoutes);
+router.use('/coupons', couponRoutes);
+router.use('/customers', customerRoutes);
+router.use('/fraud', fraudRoutes);
+// Feeds live at the API root so their URLs stay short enough to paste into
+// Search Console and the ad platforms.
+router.use('/', feedRoutes);
 
 export default router;

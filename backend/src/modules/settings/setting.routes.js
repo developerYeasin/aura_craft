@@ -10,7 +10,15 @@ const router = Router();
 
 const settingsSchema = z.record(z.string(), z.union([z.string(), z.number(), z.null()]));
 
-router.get('/', asyncHandler(async (req, res) => ok(res, await service.getAll())));
+router.get('/', asyncHandler(async (req, res) => ok(res, await service.getPublic())));
+
+// Admin view keeps the real secret values so they can be edited.
+router.get(
+  '/admin',
+  authenticate,
+  authorize('immortal', 'admin'),
+  asyncHandler(async (req, res) => ok(res, await service.getAll()))
+);
 
 router.put(
   '/',

@@ -5,6 +5,8 @@ import { generateOrderCode } from '../../utils/orderCode.js';
 import { getSetting } from '../settings/setting.service.js';
 import { notify } from '../notifications/notification.service.js';
 import { toBn, money as bnMoney } from '../../utils/bn.js';
+import { screenOrder } from './order.guard.js';
+import { evaluateCoupon, markCouponUsed } from '../coupons/coupon.service.js';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -19,7 +21,7 @@ export const getOne = async (id) => {
   return order;
 };
 
-export const place = async (payload) => {
+export const place = async (payload, context = {}) => {
   const ids = [...new Set(payload.items.map((i) => i.product_id))];
   const products = await query(
     `SELECT p.id, p.name, p.price, p.stock, p.is_active,
@@ -51,14 +53,41 @@ export const place = async (payload) => {
   const insideCharge = Number((await getSetting('delivery_charge_inside')) || 60);
   const outsideCharge = Number((await getSetting('delivery_charge_outside')) || 120);
   const deliveryCharge = payload.delivery_area === 'outside_dhaka' ? outsideCharge : insideCharge;
-  const total = Number((subtotal + deliveryCharge).toFixed(2));
+
+  // The coupon is re-evaluated here even though checkout already previewed it:
+  // the browser's number is a suggestion, this one is the price actually charged.
+  let discount = 0;
+  let couponCode = null;
+  if (payload.coupon_code) {
+    const applied = await evaluateCoupon({
+      code: payload.coupon_code,
+      subtotal,
+      phone: payload.customer_phone,
+    });
+    discount = applied.discount;
+    couponCode = applied.code;
+  }
+
+  const total = Number((subtotal - discount + deliveryCharge).toFixed(2));
+
+  // Screened after pricing (the rules look at the real total) but before any
+  // write, so a rejected order never touches stock.
+  const screening = await screenOrder({
+    phone: payload.customer_phone,
+    customerName: payload.customer_name,
+    ip: context.ip,
+    deviceId: context.deviceId,
+    honeypot: context.honeypot,
+    total,
+    itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
+  });
 
   const orderId = await transaction(async (conn) => {
     const [result] = await conn.query('INSERT INTO orders SET ?', [
       {
         order_code: generateOrderCode(),
         customer_name: payload.customer_name,
-        customer_phone: payload.customer_phone,
+        customer_phone: screening.phone || payload.customer_phone,
         customer_email: payload.customer_email || null,
         address: payload.address,
         city: payload.city || null,
@@ -66,8 +95,12 @@ export const place = async (payload) => {
         note: payload.note || null,
         payment_method: payload.payment_method,
         subtotal,
+        discount,
+        coupon_code: couponCode,
         delivery_charge: deliveryCharge,
         total,
+        ip_address: context.ip || null,
+        risk_flags: screening.flags.length ? screening.flags.join(',') : null,
       },
     ]);
     const id = result.insertId;
@@ -91,6 +124,8 @@ export const place = async (payload) => {
     }
     return id;
   });
+
+  await markCouponUsed(couponCode);
 
   const order = await repo.findById(orderId);
 

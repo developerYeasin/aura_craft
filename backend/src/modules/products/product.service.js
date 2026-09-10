@@ -1,4 +1,5 @@
 import * as repo from './product.repository.js';
+import { query } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { slugify } from '../../utils/slug.js';
 
@@ -51,6 +52,18 @@ export const edit = async (id, payload) => {
   const { data, images } = prepare(payload);
   await repo.update(existing.id, data, images);
   return repo.findByKey(existing.id, { activeOnly: false });
+};
+
+/**
+ * Stock-only update. Kept apart from edit() so the product list can adjust
+ * stock without sending (and risking overwriting) the whole product payload.
+ */
+export const setStock = async (id, { stock, delta }) => {
+  const existing = await repo.findByKey(id, { activeOnly: false });
+  if (!existing) throw ApiError.notFound('Product not found');
+  const next = stock !== undefined ? stock : Math.max(0, Number(existing.stock) + Number(delta));
+  await query('UPDATE products SET stock = ? WHERE id = ?', [next, existing.id]);
+  return { id: existing.id, name: existing.name, stock: next, previous: Number(existing.stock) };
 };
 
 export const destroy = async (id) => {

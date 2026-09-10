@@ -37,3 +37,13 @@ export const createProductSchema = z.object({
 });
 
 export const updateProductSchema = createProductSchema.partial();
+
+/** Quick stock edit from the product list — absolute value or a +/- delta. */
+export const stockSchema = z
+  .object({
+    stock: z.coerce.number().int().min(0).optional(),
+    delta: z.coerce.number().int().optional(),
+  })
+  .refine((v) => v.stock !== undefined || v.delta !== undefined, {
+    message: 'stock or delta is required',
+  });

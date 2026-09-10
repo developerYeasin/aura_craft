@@ -79,9 +79,17 @@ CREATE TABLE IF NOT EXISTS orders (
   note TEXT NULL,
   payment_method ENUM('cod','bkash','nagad') NOT NULL DEFAULT 'cod',
   subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
+  discount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  coupon_code VARCHAR(40) NULL,
   delivery_charge DECIMAL(10,2) NOT NULL DEFAULT 0,
   total DECIMAL(10,2) NOT NULL DEFAULT 0,
   status ENUM('pending','processing','shipped','delivered','cancelled') NOT NULL DEFAULT 'pending',
+  ip_address VARCHAR(64) NULL,
+  risk_flags VARCHAR(255) NULL,
+  courier_provider VARCHAR(32) NULL,
+  courier_consignment_id VARCHAR(64) NULL,
+  courier_tracking_url VARCHAR(300) NULL,
+  courier_status VARCHAR(64) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_orders_status (status, created_at)
@@ -146,4 +154,63 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_endpoint (endpoint(255)),
   CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS courier_fraud_cache (
+  phone VARCHAR(20) PRIMARY KEY,
+  total_parcel INT NOT NULL DEFAULT 0,
+  success_parcel INT NOT NULL DEFAULT 0,
+  cancelled_parcel INT NOT NULL DEFAULT 0,
+  success_ratio DECIMAL(5,2) NOT NULL DEFAULT 0,
+  checked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_fraud_checked (checked_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  description VARCHAR(200) NULL,
+  type ENUM('percent','fixed') NOT NULL DEFAULT 'percent',
+  value DECIMAL(10,2) NOT NULL DEFAULT 0,
+  min_order DECIMAL(10,2) NOT NULL DEFAULT 0,
+  max_discount DECIMAL(10,2) NULL,
+  usage_limit INT NULL,
+  used_count INT NOT NULL DEFAULT 0,
+  per_phone_limit INT NULL,
+  starts_at DATETIME NULL,
+  expires_at DATETIME NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_coupons_active (is_active, expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS fraud_lists (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  list_type ENUM('block','allow') NOT NULL DEFAULT 'block',
+  value_type ENUM('phone','ip','device') NOT NULL DEFAULT 'phone',
+  value VARCHAR(120) NOT NULL,
+  note VARCHAR(200) NULL,
+  created_by VARCHAR(120) NULL,
+  expires_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_list_entry (list_type, value_type, value),
+  INDEX idx_list_lookup (value_type, value)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS fraud_events (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  action ENUM('blocked','flagged','allowed','test_blocked') NOT NULL DEFAULT 'flagged',
+  score INT NOT NULL DEFAULT 0,
+  reasons VARCHAR(500) NULL,
+  customer_name VARCHAR(140) NULL,
+  phone VARCHAR(40) NULL,
+  ip_address VARCHAR(64) NULL,
+  device_id VARCHAR(80) NULL,
+  order_total DECIMAL(10,2) NULL,
+  item_count INT NULL,
+  message VARCHAR(300) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_fraud_events_created (created_at),
+  INDEX idx_fraud_events_phone (phone)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

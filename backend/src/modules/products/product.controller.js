@@ -25,6 +25,8 @@ export const createOne = asyncHandler(async (req, res) => created(res, await ser
 
 export const updateOne = asyncHandler(async (req, res) => ok(res, await service.edit(req.params.id, req.body)));
 
+export const updateStock = asyncHandler(async (req, res) => ok(res, await service.setStock(req.params.id, req.body)));
+
 export const deleteOne = asyncHandler(async (req, res) => {
   await service.destroy(req.params.id);
   ok(res, { deleted: true });
