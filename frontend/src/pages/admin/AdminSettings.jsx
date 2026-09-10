@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { settingApi, authApi } from '../../api/index.js';
+import { settingApi, authApi, courierApi } from '../../api/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useStore } from '../../context/StoreContext.jsx';
 import { Loader, ErrorBox, Field } from '../../components/ui/index.jsx';
@@ -40,6 +40,22 @@ const GROUPS = [
       ['delivery_charge_outside', 'ঢাকার বাইরে (৳)', 'number'],
     ],
   },
+  {
+    title: 'কুরিয়ার',
+    note: 'যে কুরিয়ার ব্যবহার করবেন সেটির কী বসিয়ে "কানেকশন টেস্ট" চাপুন।',
+    fields: [
+      ['courier_provider', 'কুরিয়ার', 'select', ['none', 'steadfast', 'pathao', 'redx']],
+      ['steadfast_api_key', 'Steadfast API Key', 'password'],
+      ['steadfast_api_secret', 'Steadfast Secret Key', 'password'],
+      ['pathao_client_id', 'Pathao Client ID'],
+      ['pathao_client_secret', 'Pathao Client Secret', 'password'],
+      ['pathao_username', 'Pathao Username'],
+      ['pathao_password', 'Pathao Password', 'password'],
+      ['pathao_store_id', 'Pathao Store ID', 'number'],
+      ['redx_api_token', 'RedX API Token', 'password'],
+    ],
+    action: 'courier-test',
+  },
 ];
 
 const AdminSettings = () => {
@@ -53,12 +69,31 @@ const AdminSettings = () => {
 
   const [pw, setPw] = useState({ current_password: '', new_password: '' });
   const [pwSaving, setPwSaving] = useState(false);
+  const [courierTesting, setCourierTesting] = useState(false);
+
+  /** Saves first: the API reads keys from the database, not from this form. */
+  const testCourier = async () => {
+    setCourierTesting(true);
+    try {
+      await settingApi.save(values);
+      const res = await courierApi.verify();
+      const extra = res.data?.balance != null ? ` · ব্যালান্স ৳${res.data.balance}` : '';
+      toast.success(`${res.data.provider} কানেকশন ঠিক আছে${extra}`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCourierTesting(false);
+    }
+  };
 
   const load = () => {
     setLoading(true);
     setError(null);
     settingApi
-      .get()
+      // Falls back to the public endpoint when the API is an older build that
+      // has no /settings/admin — the frontend and backend deploy separately.
+      .getAdmin()
+      .catch((err) => (err.status === 404 ? settingApi.get() : Promise.reject(err)))
       .then((res) => setValues(res.data || {}))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -113,15 +148,54 @@ const AdminSettings = () => {
           {GROUPS.map((group) => (
             <div className="card card--pad" key={group.title}>
               <h3 className="t-h3" style={{ fontSize: 17, marginBottom: 14 }}>{group.title}</h3>
-              {group.fields.map(([key, label, type]) => (
-                <Field label={label} key={key}>
-                  {type === 'textarea' ? (
-                    <textarea className="textarea" value={values[key] || ''} onChange={set(key)} />
-                  ) : (
-                    <input className="input" type={type || 'text'} value={values[key] || ''} onChange={set(key)} />
-                  )}
-                </Field>
-              ))}
+              {group.note && <p className="mute-2" style={{ marginTop: -8 }}>{group.note}</p>}
+              {group.fields.map(([key, label, type, placeholder]) => {
+                if (type === 'select') {
+                  return (
+                    <Field label={label} key={key}>
+                      <select className="select" value={values[key] || 'none'} onChange={set(key)}>
+                        {placeholder.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt === 'none' ? 'কোনোটি নয়' : opt}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  );
+                }
+                if (type === 'toggle') {
+                  return (
+                    <label className="checkbox" key={key} style={{ marginBottom: 10 }}>
+                      <input
+                        type="checkbox"
+                        checked={values[key] === '1' || values[key] === undefined}
+                        onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.checked ? '1' : '0' }))}
+                      />
+                      {label}
+                    </label>
+                  );
+                }
+                return (
+                  <Field label={label} key={key}>
+                    {type === 'textarea' ? (
+                      <textarea className="textarea" value={values[key] || ''} onChange={set(key)} placeholder={placeholder} />
+                    ) : (
+                      <input
+                        className="input"
+                        type={type || 'text'}
+                        value={values[key] || ''}
+                        onChange={set(key)}
+                        placeholder={placeholder}
+                      />
+                    )}
+                  </Field>
+                );
+              })}
+              {group.action === 'courier-test' && (
+                <button type="button" className="btn btn--sm" onClick={testCourier} disabled={courierTesting}>
+                  {courierTesting ? 'টেস্ট হচ্ছে…' : 'কানেকশন টেস্ট'}
+                </button>
+              )}
             </div>
           ))}
         </div>

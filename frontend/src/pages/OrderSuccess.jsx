@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { orderApi } from '../api/index.js';
 import { Loader, ErrorBox } from '../components/ui/index.jsx';
 import { IconBadgeCheck, IconArrowRight } from '../components/ui/Icons.jsx';
 import OrderSummaryCard from '../components/product/OrderSummaryCard.jsx';
+import { trackEvent } from '../utils/tracking.js';
 
 const OrderSuccess = () => {
   const { code } = useParams();
@@ -11,6 +12,7 @@ const OrderSuccess = () => {
   const [order, setOrder] = useState(location.state?.order || null);
   const [loading, setLoading] = useState(!location.state?.order);
   const [error, setError] = useState(null);
+  const fired = useRef(null);
 
   useEffect(() => {
     if (order) return;
@@ -20,6 +22,22 @@ const OrderSuccess = () => {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [code, order]);
+
+  useEffect(() => {
+    // Guard against StrictMode double-invoke and re-renders: one purchase per code.
+    if (!order || fired.current === order.order_code) return;
+    fired.current = order.order_code;
+    trackEvent('purchase', {
+      value: Number(order.total || 0),
+      transaction_id: order.order_code,
+      items: (order.items || []).map((i) => ({
+        item_id: String(i.product_id ?? ''),
+        item_name: i.product_name,
+        price: Number(i.unit_price),
+        quantity: i.quantity,
+      })),
+    });
+  }, [order]);
 
   if (loading) return <div className="container"><Loader /></div>;
   if (error) return <div className="container"><ErrorBox message={error} /></div>;

@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { trackEvent } from '../utils/tracking.js';
+import { couponApi } from '../api/index.js';
+import { getDeviceId } from '../utils/device.js';
 import { Link, useNavigate } from 'react-router-dom';
 import { orderApi } from '../api/index.js';
 import { useCart } from '../context/CartContext.jsx';
@@ -31,14 +34,54 @@ const Checkout = () => {
   const toast = useToast();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState({ ...initialForm, website: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [couponDraft, setCouponDraft] = useState('');
+  const [coupon, setCoupon] = useState(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState(null);
+
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current || items.length === 0) return;
+    fired.current = true;
+    trackEvent('begin_checkout', {
+      value: subtotal,
+      items: items.map((i) => ({ item_id: String(i.id), item_name: i.name, price: Number(i.price), quantity: i.quantity })),
+    });
+  }, [items, subtotal]);
 
   const insideCharge = Number(settings.delivery_charge_inside || 60);
   const outsideCharge = Number(settings.delivery_charge_outside || 120);
   const delivery = form.delivery_area === 'outside_dhaka' ? outsideCharge : insideCharge;
-  const total = subtotal + delivery;
+  const discount = coupon?.discount || 0;
+  const total = subtotal - discount + delivery;
+
+  /** Preview only — the server re-checks the code and decides the real price. */
+  const applyCoupon = async (e) => {
+    e.preventDefault();
+    const code = couponDraft.trim();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const res = await couponApi.validate({ code, subtotal, phone: form.customer_phone || undefined });
+      setCoupon(res.data);
+      toast.success(`কুপন প্রয়োগ হয়েছে — ${money(res.data.discount)} ছাড়`);
+    } catch (err) {
+      setCoupon(null);
+      setCouponError(err.message);
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
+  const clearCoupon = () => {
+    setCoupon(null);
+    setCouponDraft('');
+    setCouponError(null);
+  };
 
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -64,6 +107,9 @@ const Checkout = () => {
         ...form,
         customer_email: form.customer_email || undefined,
         items: items.map((i) => ({ product_id: i.id, quantity: i.quantity, variant: i.variant })),
+        coupon_code: coupon?.code || undefined,
+        device_id: getDeviceId(),
+        website: form.website || '',
       };
       const res = await orderApi.place(payload);
       clear();
@@ -107,6 +153,17 @@ const Checkout = () => {
       </div>
 
       <form className="checkout-grid" onSubmit={submit} noValidate>
+        {/* Honeypot: hidden from people and from screen readers, filled by bots. */}
+        <input
+          type="text"
+          name="website"
+          className="hp-field"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          value={form.website}
+          onChange={set('website')}
+        />
         <div className="card card--pad">
           <h3 style={{ marginBottom: 16 }}>অর্ডার ফর্ম</h3>
 
@@ -168,6 +225,31 @@ const Checkout = () => {
             </div>
           ))}
 
+          <div className="coupon-box">
+            {coupon ? (
+              <div className="spread">
+                <span className="badge badge--ok num">{coupon.code}</span>
+                <button type="button" className="btn btn--xs btn--ghost" onClick={clearCoupon}>
+                  সরান
+                </button>
+              </div>
+            ) : (
+              <div className="row gap-8">
+                <input
+                  className="input"
+                  placeholder="কুপন কোড"
+                  value={couponDraft}
+                  onChange={(e) => setCouponDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && applyCoupon(e)}
+                />
+                <button type="button" className="btn btn--sm" onClick={applyCoupon} disabled={couponBusy || !couponDraft.trim()}>
+                  {couponBusy ? '…' : 'প্রয়োগ'}
+                </button>
+              </div>
+            )}
+            {couponError && <p className="field-error" style={{ margin: '6px 0 0' }}>{couponError}</p>}
+          </div>
+
           <div className="summary__row" style={{ marginTop: 10 }}>
             <span>সাবটোটাল</span>
             <span>{money(subtotal)}</span>
@@ -176,6 +258,12 @@ const Checkout = () => {
             <span>ডেলিভারি চার্জ</span>
             <span>{money(delivery)}</span>
           </div>
+          {discount > 0 && (
+            <div className="summary__row">
+              <span>ছাড় ({coupon.code})</span>
+              <span>− {money(discount)}</span>
+            </div>
+          )}
           <div className="summary__row summary__row--total">
             <span>সর্বমোট</span>
             <span>{money(total)}</span>

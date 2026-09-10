@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { trackEvent, toItem } from '../utils/tracking.js';
 
 const CartContext = createContext(null);
 const STORAGE_KEY = 'auracraft_cart';
@@ -32,6 +33,13 @@ export const CartProvider = ({ children }) => {
   const lineKey = (id, variant) => `${id}::${variant || ''}`;
 
   const add = useCallback((product, quantity = 1, variant = null) => {
+    trackEvent('add_to_cart', {
+      value: Number(product.price) * quantity,
+      items: [toItem(product, quantity)],
+      id: product.id,
+      name: product.name,
+      quantity,
+    });
     setItems((list) => {
       const key = lineKey(product.id, variant);
       const existing = list.find((i) => lineKey(i.id, i.variant) === key);

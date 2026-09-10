@@ -6,7 +6,7 @@ import {
   IconBell, IconBellOff, IconVolume, IconVolumeOff, IconCheck,
   IconTrash, IconReceipt, IconAlert, IconSparkle,
 } from '../ui/Icons.jsx';
-import { toBn } from '../../utils/format.js';
+import { enNum } from '../../utils/format.js';
 
 const TYPE_ICON = { order: IconReceipt, low_stock: IconAlert, system: IconSparkle };
 
@@ -14,9 +14,9 @@ const TYPE_ICON = { order: IconReceipt, low_stock: IconAlert, system: IconSparkl
 const timeAgo = (value) => {
   const diff = Math.floor((Date.now() - new Date(value).getTime()) / 1000);
   if (diff < 60) return 'এইমাত্র';
-  if (diff < 3600) return `${toBn(Math.floor(diff / 60))} মিনিট আগে`;
-  if (diff < 86400) return `${toBn(Math.floor(diff / 3600))} ঘণ্টা আগে`;
-  return `${toBn(Math.floor(diff / 86400))} দিন আগে`;
+  if (diff < 3600) return `${enNum(Math.floor(diff / 60))} মিনিট আগে`;
+  if (diff < 86400) return `${enNum(Math.floor(diff / 3600))} ঘণ্টা আগে`;
+  return `${enNum(Math.floor(diff / 86400))} দিন আগে`;
 };
 
 const NotificationBell = () => {
@@ -73,7 +73,7 @@ const NotificationBell = () => {
         aria-expanded={open}
       >
         <IconBell />
-        {unread > 0 && <span className="nav__count">{unread > 99 ? '99+' : toBn(unread)}</span>}
+        {unread > 0 && <span className="nav__count">{unread > 99 ? '99+' : enNum(unread)}</span>}
         <span className={`notif__dot${connected ? ' is-live' : ''}`} title={connected ? 'লাইভ' : 'সংযোগ নেই'} />
       </button>
 
@@ -84,7 +84,7 @@ const NotificationBell = () => {
               <b>নোটিফিকেশন</b>
               <span className="mute-2" style={{ display: 'block' }}>
                 {connected ? 'লাইভ সংযুক্ত' : 'সংযোগের চেষ্টা চলছে…'}
-                {unread > 0 && ` · ${toBn(unread)} টি নতুন`}
+                {unread > 0 && ` · ${enNum(unread)} টি নতুন`}
               </span>
             </div>
             <div className="row gap-8">

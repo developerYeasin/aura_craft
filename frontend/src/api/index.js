@@ -18,6 +18,7 @@ export const productApi = {
   create: (body) => client.post('/products', body),
   update: (id, body) => client.put(`/products/${id}`, body),
   remove: (id) => client.delete(`/products/${id}`),
+  setStock: (id, stock) => client.patch(`/products/${id}/stock`, { stock }),
 };
 
 export const orderApi = {
@@ -48,11 +49,45 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  stats: () => client.get('/dashboard/stats'),
+  stats: (params) => client.get('/dashboard/stats', { params }),
+};
+
+export const fraudApi = {
+  defaults: () => client.get('/fraud/defaults'),
+  stats: (params) => client.get('/fraud/stats', { params }),
+  events: (params) => client.get('/fraud/events', { params }),
+  clearEvents: (params) => client.delete('/fraud/events', { params }),
+  lists: () => client.get('/fraud/lists'),
+  addListEntry: (body) => client.post('/fraud/lists', body),
+  removeListEntry: (id) => client.delete(`/fraud/lists/${id}`),
+  blockFromEvent: (id, body) => client.post(`/fraud/lists/from-event/${id}`, body),
+};
+
+export const couponApi = {
+  list: () => client.get('/coupons'),
+  create: (body) => client.post('/coupons', body),
+  update: (id, body) => client.put(`/coupons/${id}`, body),
+  remove: (id) => client.delete(`/coupons/${id}`),
+  validate: (body) => client.post('/coupons/validate', body),
+};
+
+export const customerApi = {
+  list: (params) => client.get('/customers', { params }),
+  get: (phone) => client.get(`/customers/${encodeURIComponent(phone)}`),
+};
+
+export const courierApi = {
+  providers: () => client.get('/courier/providers'),
+  verify: () => client.post('/courier/verify'),
+  send: (orderId) => client.post(`/courier/orders/${orderId}/send`),
+  status: (orderId) => client.get(`/courier/orders/${orderId}/status`),
+  fraudCheck: (phone) => client.get('/courier/fraud-check', { params: { phone } }),
+  fraudCheckBulk: (phones) => client.post('/courier/fraud-check/bulk', { phones }),
 };
 
 export const settingApi = {
   get: () => client.get('/settings'),
+  getAdmin: () => client.get('/settings/admin'),
   save: (body) => client.put('/settings', body),
 };
 

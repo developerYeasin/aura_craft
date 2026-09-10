@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useStore } from '../../context/StoreContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Empty } from '../../components/ui/index.jsx';
 import { IconEdit, IconTrash, IconPlus, IconFolder, categoryIcon } from '../../components/ui/Icons.jsx';
-import { toBn } from '../../utils/format.js';
+import { enNum } from '../../utils/format.js';
 
 const emptyForm = {
   name: '',
@@ -141,8 +141,8 @@ const AdminCategories = () => {
                     <div className="mute-2">{c.name}</div>
                   </td>
                   <td className="mute-2">{c.slug}</td>
-                  <td>{toBn(c.product_count)}</td>
-                  <td>{toBn(c.sort_order)}</td>
+                  <td>{enNum(c.product_count)}</td>
+                  <td>{enNum(c.sort_order)}</td>
                   <td>
                     <span className={`badge ${c.is_active ? 'badge--ok' : 'badge--mute'}`}>
                       {c.is_active ? 'Active' : 'Hidden'}

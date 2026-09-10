@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { categoryApi, settingApi } from '../api/index.js';
+import { initTracking } from '../utils/tracking.js';
 
 const StoreContext = createContext(null);
 
@@ -31,7 +32,10 @@ export const StoreProvider = ({ children }) => {
     Promise.all([categoryApi.list(), settingApi.get()])
       .then(([catRes, setRes]) => {
         setCategories(catRes.data || []);
-        setSettings({ ...FALLBACK_SETTINGS, ...(setRes.data || {}) });
+        const merged = { ...FALLBACK_SETTINGS, ...(setRes.data || {}) };
+        setSettings(merged);
+        // Tags are configured in the admin panel, so they can only start here.
+        initTracking(merged);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

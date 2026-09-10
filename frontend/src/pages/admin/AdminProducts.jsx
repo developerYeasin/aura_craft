@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Pagination, Empty } from '../../components/ui/index.jsx';
 import { IconEdit, IconTrash, IconPlus, IconSearch, IconGem } from '../../components/ui/Icons.jsx';
-import { money, toBn, imageOf } from '../../utils/format.js';
+import { enMoney, enNum, imageOf } from '../../utils/format.js';
 
 const emptyForm = {
   category_id: '',
@@ -45,6 +45,8 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirm, setConfirm] = useState(null);
+  const [stockBusy, setStockBusy] = useState(null);
+  const [stockEdit, setStockEdit] = useState(null);
 
   const query = useMemo(
     () => ({ page, limit: 12, sort: 'newest', ...(search ? { search } : {}), ...(categoryFilter ? { categoryId: categoryFilter } : {}) }),
@@ -72,6 +74,22 @@ const AdminProducts = () => {
     setForm({ ...emptyForm, category_id: categories[0]?.id || '' });
     setModalOpen(true);
   };
+
+  /** Stock is patched on its own endpoint so nothing else on the product moves. */
+  const applyStock = async (id, body, label) => {
+    setStockBusy(id);
+    try {
+      const res = await productApi.setStock(id, body);
+      setData((d) => ({ ...d, items: d.items.map((it) => (it.id === id ? { ...it, stock: res.data.stock } : it)) }));
+      toast.success(label || `স্টক আপডেট হয়েছে — ${enNum(res.data.stock)}`);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setStockBusy(null);
+    }
+  };
+
+  const adjustStock = (product, delta) => applyStock(product.id, { delta }, null);
 
   const openEdit = async (product) => {
     try {
@@ -167,7 +185,7 @@ const AdminProducts = () => {
       <div className="admin__top">
         <div>
           <h1 className="display t-h2">Products</h1>
-          <p className="mute-2" style={{ margin: 0 }}>মোট {toBn(data.meta?.total || 0)} টি প্রোডাক্ট</p>
+          <p className="mute-2" style={{ margin: 0 }}>মোট {enNum(data.meta?.total || 0)} টি প্রোডাক্ট</p>
         </div>
         <button type="button" className="btn btn--primary btn--sm" onClick={openCreate}>
           <IconPlus width={15} height={15} /> নতুন প্রোডাক্ট
@@ -231,11 +249,38 @@ const AdminProducts = () => {
                       <div className="mute-2">{p.sku}</div>
                     </td>
                     <td className="mute-2">{p.category_name_bn || p.category_name}</td>
-                    <td>{money(p.price)}</td>
+                    <td>{enMoney(p.price)}</td>
                     <td>
-                      <span className={`badge ${p.stock > 5 ? 'badge--ok' : p.stock > 0 ? 'badge--warn' : 'badge--danger'}`}>
-                        {toBn(p.stock)}
-                      </span>
+                      <div className="stock-cell">
+                        <button
+                          type="button"
+                          className="btn btn--xs"
+                          onClick={() => adjustStock(p, -1)}
+                          disabled={stockBusy === p.id || p.stock <= 0}
+                          aria-label="স্টক কমান"
+                        >
+                          −
+                        </button>
+                        <span className={`badge ${p.stock > 5 ? 'badge--ok' : p.stock > 0 ? 'badge--warn' : 'badge--danger'}`}>
+                          {enNum(p.stock)}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn--xs"
+                          onClick={() => adjustStock(p, 1)}
+                          disabled={stockBusy === p.id}
+                          aria-label="স্টক বাড়ান"
+                        >
+                          +
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--xs btn--ghost"
+                          onClick={() => setStockEdit({ id: p.id, name: p.name, value: String(p.stock) })}
+                        >
+                          সেট
+                        </button>
+                      </div>
                     </td>
                     <td>
                       <span className={`badge ${p.is_active ? 'badge--ok' : 'badge--mute'}`}>
@@ -361,6 +406,33 @@ const AdminProducts = () => {
             <button type="submit" className="btn btn--primary btn--sm" disabled={saving}>
               {saving ? 'সেভ হচ্ছে…' : 'সেভ করুন'}
             </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!stockEdit} title={`স্টক সেট করুন — ${stockEdit?.name || ''}`} onClose={() => setStockEdit(null)}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const value = Number(stockEdit.value);
+            if (!Number.isFinite(value) || value < 0) return;
+            applyStock(stockEdit.id, { stock: value }, `স্টক সেট হয়েছে — ${enNum(value)}`);
+            setStockEdit(null);
+          }}
+        >
+          <Field label="নতুন স্টক সংখ্যা" required>
+            <input
+              className="input"
+              type="number"
+              min="0"
+              autoFocus
+              value={stockEdit?.value ?? ''}
+              onChange={(e) => setStockEdit((v) => ({ ...v, value: e.target.value }))}
+            />
+          </Field>
+          <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setStockEdit(null)}>বাতিল</button>
+            <button type="submit" className="btn btn--primary btn--sm">সেভ করুন</button>
           </div>
         </form>
       </Modal>

@@ -30,6 +30,10 @@ const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx'));
 const AdminTeam = lazy(() => import('./pages/admin/AdminTeam.jsx'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings.jsx'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers.jsx'));
+const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
+const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons.jsx'));
+const AdminFraud = lazy(() => import('./pages/admin/AdminFraud.jsx'));
+const AdminMarketing = lazy(() => import('./pages/admin/AdminMarketing.jsx'));
 
 const App = () => (
   <BrowserRouter>
@@ -63,6 +67,10 @@ const App = () => (
                   <Route path="products" element={<AdminProducts />} />
                   <Route path="categories" element={<AdminCategories />} />
                   <Route path="orders" element={<AdminOrders />} />
+                  <Route path="customers" element={<AdminCustomers />} />
+                  <Route path="coupons" element={<AdminCoupons />} />
+                  <Route path="fraud" element={<AdminFraud />} />
+                  <Route path="marketing" element={<AdminMarketing />} />
                   <Route path="team" element={<AdminTeam />} />
                   <Route path="settings" element={<AdminSettings />} />
                   <Route

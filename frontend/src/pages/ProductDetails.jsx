@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { trackEvent, toItem } from '../utils/tracking.js';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '../api/index.js';
 import { useCart } from '../context/CartContext.jsx';
@@ -37,6 +38,12 @@ const ProductDetails = () => {
       .get(slug)
       .then((res) => {
         setProduct(res.data);
+        trackEvent('view_item', {
+          value: Number(res.data?.price || 0),
+          items: [toItem(res.data)],
+          id: res.data?.id,
+          name: res.data?.name,
+        });
         setActiveImage(0);
         setQuantity(1);
         setVariant(res.data.size_options?.split('/')[0]?.trim() || '');

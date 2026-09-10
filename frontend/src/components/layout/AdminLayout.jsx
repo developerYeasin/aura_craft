@@ -4,9 +4,10 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader } from '../ui/index.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import { useTheme } from '../../hooks/useTheme.js';
+import BackToTop from '../ui/BackToTop.jsx';
 import {
-  IconLogout, IconMenu, IconClose, IconSun, IconMoon, IconDashboard, IconGem, IconFolder,
-  IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore,
+  IconLogout, IconMenu, IconClose, IconSun, IconMoon, IconDashboard, IconGem, IconFolder, IconTag,
+  IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore, IconShield, IconTrendUp,
 } from '../ui/Icons.jsx';
 
 const LINKS = [
@@ -14,6 +15,10 @@ const LINKS = [
   { to: '/admin/products', label: 'Products', Icon: IconGem, group: 'Catalog' },
   { to: '/admin/categories', label: 'Categories', Icon: IconFolder },
   { to: '/admin/orders', label: 'Orders', Icon: IconReceipt, group: 'Sales' },
+  { to: '/admin/customers', label: 'Customers', Icon: IconUsers },
+  { to: '/admin/coupons', label: 'Coupons', Icon: IconTag },
+  { to: '/admin/fraud', label: 'Fraud Prevention', Icon: IconShield, group: 'Protection' },
+  { to: '/admin/marketing', label: 'SEO & Marketing', Icon: IconTrendUp, group: 'Growth' },
   { to: '/admin/team', label: 'Team', Icon: IconUsers, group: 'Site' },
   { to: '/admin/settings', label: 'Settings', Icon: IconSettings },
   { to: '/admin/users', label: 'Users', Icon: IconInfinity, immortalOnly: true, group: 'Immortal' },
@@ -99,6 +104,7 @@ const AdminLayout = () => {
           <NotificationBell />
         </div>
         <Outlet />
+        <BackToTop threshold={400} />
       </div>
     </div>
   );

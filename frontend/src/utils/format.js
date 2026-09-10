@@ -9,6 +9,22 @@ export const money = (value) => {
   return `৳ ${toBn(formatted)}`;
 };
 
+/**
+ * Latin-digit counterparts of toBn/money, for the admin panel. Staff read
+ * numbers there all day next to order codes and dates that are already Latin,
+ * and mixed digit systems in one table slow that down badly.
+ */
+export const enNum = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value ?? '');
+  return n.toLocaleString('en-US', { maximumFractionDigits: n % 1 === 0 ? 0 : 2 });
+};
+
+export const enMoney = (value) => `৳ ${enNum(Number(value || 0))}`;
+
+/** Trims a trailing .00 so a full record reads "100%", not "100.00%". */
+export const enPercent = (value) => `${enNum(Math.round(Number(value || 0) * 100) / 100)}%`;
+
 export const discountPercent = (price, comparePrice) => {
   const p = Number(price);
   const c = Number(comparePrice || 0);
