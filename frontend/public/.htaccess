@@ -1,0 +1,43 @@
+# AuraCraft — Apache config for the built SPA.
+# Shipped from frontend/public/, so `npm run build` copies it into dist/ and it
+# deploys together with index.html.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # A hashed asset that is missing must return a real 404 — never index.html.
+  # Without this the SPA fallback answers 200 with HTML, the browser rejects it
+  # on MIME grounds, and the site renders unstyled with nothing in the console.
+  RewriteCond %{REQUEST_URI} ^/assets/
+  RewriteRule ^ - [L,R=404]
+
+  # Everything else: serve real files, otherwise hand over to the SPA.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule ^ /index.html [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType text/css .css
+  AddType application/javascript .js
+  AddType image/svg+xml .svg
+  AddType application/json .json
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Hashed filenames change on every build, so they can be cached hard.
+  <FilesMatch "\.(css|js|woff2?|svg|png|jpe?g|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # index.html and the service worker must always be revalidated, otherwise a
+  # cached index.html keeps asking for assets from an older build.
+  <FilesMatch "^(index\.html|sw\.js)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
