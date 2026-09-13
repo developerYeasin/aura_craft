@@ -7,6 +7,8 @@ export const createOrderSchema = z.object({
   address: z.string().min(5),
   city: z.string().max(120).optional().nullable(),
   delivery_area: z.enum(['inside_dhaka', 'outside_dhaka']).default('inside_dhaka'),
+  // Preferred over delivery_area: the zone decides both region and charge.
+  delivery_zone_id: z.coerce.number().int().positive().optional().nullable(),
   device_id: z.string().trim().max(80).optional().nullable(),
   website: z.string().max(200).optional().nullable(),
   coupon_code: z.string().trim().max(40).optional().nullable(),

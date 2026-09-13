@@ -2,7 +2,8 @@ import { query, transaction } from '../../config/db.js';
 import * as repo from './order.repository.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { generateOrderCode } from '../../utils/orderCode.js';
-import { getSetting } from '../settings/setting.service.js';
+import { resolveDelivery } from '../delivery/delivery.service.js';
+import { effectivePrice, hasDiscount } from '../../utils/pricing.js';
 import { notify } from '../notifications/notification.service.js';
 import { toBn, money as bnMoney } from '../../utils/bn.js';
 import { screenOrder } from './order.guard.js';
@@ -24,7 +25,7 @@ export const getOne = async (id) => {
 export const place = async (payload, context = {}) => {
   const ids = [...new Set(payload.items.map((i) => i.product_id))];
   const products = await query(
-    `SELECT p.id, p.name, p.price, p.stock, p.is_active,
+    `SELECT p.id, p.name, p.price, p.discount_type, p.discount_value, p.stock, p.is_active,
             (SELECT url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC LIMIT 1) AS image
      FROM products p WHERE p.id IN (${ids.map(() => '?').join(',')})`,
     ids
@@ -37,12 +38,13 @@ export const place = async (payload, context = {}) => {
     if (product.stock < item.quantity) {
       throw ApiError.badRequest(`${product.name} — only ${product.stock} left in stock`);
     }
-    const unitPrice = Number(product.price);
+    const unitPrice = effectivePrice(product);
     return {
       product_id: product.id,
       product_name: product.name,
       product_image: product.image,
       unit_price: unitPrice,
+      original_price: hasDiscount(product) ? Number(product.price) : null,
       quantity: item.quantity,
       variant: item.variant || null,
       line_total: Number((unitPrice * item.quantity).toFixed(2)),
@@ -50,9 +52,8 @@ export const place = async (payload, context = {}) => {
   });
 
   const subtotal = Number(lines.reduce((sum, l) => sum + l.line_total, 0).toFixed(2));
-  const insideCharge = Number((await getSetting('delivery_charge_inside')) || 60);
-  const outsideCharge = Number((await getSetting('delivery_charge_outside')) || 120);
-  const deliveryCharge = payload.delivery_area === 'outside_dhaka' ? outsideCharge : insideCharge;
+  const delivery = await resolveDelivery({ zoneId: payload.delivery_zone_id, area: payload.delivery_area });
+  const deliveryCharge = delivery.charge;
 
   // The coupon is re-evaluated here even though checkout already previewed it:
   // the browser's number is a suggestion, this one is the price actually charged.
@@ -91,7 +92,8 @@ export const place = async (payload, context = {}) => {
         customer_email: payload.customer_email || null,
         address: payload.address,
         city: payload.city || null,
-        delivery_area: payload.delivery_area,
+        delivery_area: delivery.region,
+        delivery_zone: delivery.zoneName,
         note: payload.note || null,
         payment_method: payload.payment_method,
         subtotal,
@@ -107,11 +109,11 @@ export const place = async (payload, context = {}) => {
 
     await conn.query(
       `INSERT INTO order_items
-        (order_id, product_id, product_name, product_image, unit_price, quantity, variant, line_total)
+        (order_id, product_id, product_name, product_image, unit_price, original_price, quantity, variant, line_total)
        VALUES ?`,
       [
         lines.map((l) => [
-          id, l.product_id, l.product_name, l.product_image, l.unit_price, l.quantity, l.variant, l.line_total,
+          id, l.product_id, l.product_name, l.product_image, l.unit_price, l.original_price, l.quantity, l.variant, l.line_total,
         ]),
       ]
     );

@@ -1,8 +1,8 @@
 /* ==========================================================================
-   AuraCraft — design system
-   Printed-catalogue retail: warm paper ground, ink type, one bronze accent.
-   Flat surfaces, hairline rules, small radii. No gradients on text, no glow,
-   no glass, no decorative motion.
+   Aura Craft — design system (base)
+   Layout, components and the token set. The glassmorphism look (translucent
+   surfaces, blur, larger radii, ambient backdrop, motion) is layered on top in
+   glass.css, which re-values these tokens — edit tokens there first.
    ========================================================================== */
 
 :root {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { customerApi } from '../../api/index.js';
 import { Loader, ErrorBox, Modal, Pagination, Empty } from '../../components/ui/index.jsx';
 import { IconEye, IconSearch, IconUsers } from '../../components/ui/Icons.jsx';
+import ClearAllButton from '../../components/ui/ClearAll.jsx';
 import { enMoney, enNum, enPercent, formatDate, formatDateTime, ORDER_STATUS } from '../../utils/format.js';
 
 const SORTS = [
@@ -66,6 +67,13 @@ const AdminCustomers = () => {
             মোট {enNum(data.meta?.total || 0)} জন কাস্টমার · ফোন নম্বর অনুযায়ী গোনা
           </p>
         </div>
+        <ClearAllButton
+          section="customers"
+          label="Customers"
+          sensitive
+          warning="কাস্টমার তালিকা অর্ডার থেকেই তৈরি হয় — তাই সব অর্ডার এবং ক্যাশ করা কুরিয়ার হিস্ট্রিও মুছে যাবে।"
+          onCleared={() => (page === 1 ? load() : setPage(1))}
+        />
       </div>
 
       <div className="toolbar">

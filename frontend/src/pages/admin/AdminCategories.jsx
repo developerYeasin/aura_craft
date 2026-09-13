@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { useStore } from '../../context/StoreContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Empty } from '../../components/ui/index.jsx';
 import { IconEdit, IconTrash, IconPlus, IconFolder, categoryIcon } from '../../components/ui/Icons.jsx';
+import ClearAllButton from '../../components/ui/ClearAll.jsx';
 import { enNum } from '../../utils/format.js';
 
 const emptyForm = {
@@ -105,9 +106,21 @@ const AdminCategories = () => {
           <h1 className="display t-h2">Categories</h1>
           <p className="mute-2" style={{ margin: 0 }}>নতুন ক্যাটাগরি যোগ করলেই নেভবার ও হোম পেজে যুক্ত হবে</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={openCreate}>
-          <IconPlus width={15} height={15} /> নতুন ক্যাটাগরি
-        </button>
+        <div className="admin__actions">
+          <ClearAllButton
+            section="categories"
+            label="Categories"
+            sensitive
+            warning="প্রতিটি ক্যাটাগরির সব প্রোডাক্টও মুছে যাবে।"
+            onCleared={() => {
+              load();
+              store.refresh();
+            }}
+          />
+          <button type="button" className="btn btn--primary btn--sm" onClick={openCreate}>
+            <IconPlus width={15} height={15} /> নতুন ক্যাটাগরি
+          </button>
+        </div>
       </div>
 
       {loading && <Loader />}

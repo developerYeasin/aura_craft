@@ -17,6 +17,16 @@ const GROUPS = [
     ],
   },
   {
+    title: 'English content',
+    note: 'ইংরেজি ভাষায় সাইট দেখলে এগুলো দেখাবে। খালি রাখলে ডিফল্ট ইংরেজি লেখা দেখাবে।',
+    fields: [
+      ['hero_title_en', 'Hero title (English)'],
+      ['hero_subtitle_en', 'Hero subtitle (English)', 'textarea'],
+      ['offer_title_en', 'Offer title (English)'],
+      ['offer_text_en', 'Offer text (English)', 'textarea'],
+    ],
+  },
+  {
     title: 'যোগাযোগ',
     fields: [
       ['contact_phone', 'ফোন'],
@@ -34,7 +44,8 @@ const GROUPS = [
     ],
   },
   {
-    title: 'ডেলিভারি চার্জ',
+    title: 'ডেলিভারি চার্জ (ব্যাকআপ)',
+    note: 'এলাকাভিত্তিক চার্জ ও ফ্রি ডেলিভারি এলাকা Delivery Zones পেজ থেকে নিয়ন্ত্রণ করুন। কোনো এলাকা না থাকলে শুধু তখন এই ফ্ল্যাট চার্জ ব্যবহার হয়।',
     fields: [
       ['delivery_charge_inside', 'ঢাকার ভেতরে (৳)', 'number'],
       ['delivery_charge_outside', 'ঢাকার বাইরে (৳)', 'number'],

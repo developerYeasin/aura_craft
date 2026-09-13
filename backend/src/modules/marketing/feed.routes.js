@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../../config/db.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { getAll } from '../settings/setting.service.js';
+import { effectivePrice, hasDiscount } from '../../utils/pricing.js';
 
 /**
  * Public XML feeds: a sitemap for search engines and product catalogues for the
@@ -38,6 +39,7 @@ const sendXml = (res, xml) => {
 const activeProducts = () =>
   query(
     `SELECT p.id, p.name, p.slug, p.short_description, p.description, p.price, p.compare_price,
+            p.discount_type, p.discount_value,
             p.stock, p.sku, p.updated_at, c.name AS category_name, c.slug AS category_slug,
             (SELECT url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC LIMIT 1) AS image
      FROM products p
@@ -86,6 +88,11 @@ const feedItems = (products, base, brand) =>
   products
     .map((p) => {
       const description = p.short_description || p.description || p.name;
+      // Regular price is the undiscounted one; sale_price only when something is actually off.
+      const sale = effectivePrice(p);
+      const regular = hasDiscount(p)
+        ? Number(p.price)
+        : Math.max(Number(p.compare_price || 0), Number(p.price));
       return `    <item>
       <g:id>${escapeXml(p.sku || p.id)}</g:id>
       <g:title>${escapeXml(p.name)}</g:title>
@@ -94,10 +101,8 @@ const feedItems = (products, base, brand) =>
       <g:image_link>${escapeXml(p.image || `${base}/logo.svg`)}</g:image_link>
       <g:availability>${Number(p.stock) > 0 ? 'in stock' : 'out of stock'}</g:availability>
       <g:condition>new</g:condition>
-      <g:price>${Number(p.price).toFixed(2)} BDT</g:price>${
-        p.compare_price && Number(p.compare_price) > Number(p.price)
-          ? `\n      <g:sale_price>${Number(p.price).toFixed(2)} BDT</g:sale_price>`
-          : ''
+      <g:price>${regular.toFixed(2)} BDT</g:price>${
+        sale < regular ? `\n      <g:sale_price>${sale.toFixed(2)} BDT</g:sale_price>` : ''
       }
       <g:brand>${escapeXml(brand)}</g:brand>
       <g:product_type>${escapeXml(p.category_name || 'Jewellery')}</g:product_type>

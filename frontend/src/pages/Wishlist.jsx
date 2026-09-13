@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { productApi } from '../api/index.js';
 import { useWishlist } from '../hooks/useWishlist.js';
+import { useI18n } from '../i18n/index.jsx';
 import ProductCard from '../components/product/ProductCard.jsx';
 import { IconHeart } from '../components/ui/Icons.jsx';
 import { Empty, SkeletonGrid, SectionHead } from '../components/ui/index.jsx';
 
 const Wishlist = () => {
   const { ids } = useWishlist();
+  const { t } = useI18n();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -25,17 +27,17 @@ const Wishlist = () => {
 
   return (
     <div className="container section--tight">
-      <SectionHead center eyebrow="Saved" title="পছন্দের তালিকা" text="আপনার সংরক্ষিত প্রোডাক্টগুলো" />
+      <SectionHead center eyebrow="Saved" title={t('wishlist.title')} text={t('wishlist.text')} />
 
       {loading && <SkeletonGrid count={4} />}
       {!loading && products.length === 0 && (
         <Empty
           icon={IconHeart}
-          title="তালিকা খালি"
-          text="প্রোডাক্ট কার্ডের হার্ট আইকনে ক্লিক করে পছন্দের প্রোডাক্ট সংরক্ষণ করুন।"
+          title={t('wishlist.empty')}
+          text={t('wishlist.emptyText')}
           action={
             <Link to="/products" className="btn btn--primary btn--sm" style={{ marginTop: 14 }}>
-              প্রোডাক্ট দেখুন
+              {t('wishlist.browse')}
             </Link>
           }
         />

@@ -18,7 +18,21 @@ export const productApi = {
   create: (body) => client.post('/products', body),
   update: (id, body) => client.put(`/products/${id}`, body),
   remove: (id) => client.delete(`/products/${id}`),
-  setStock: (id, stock) => client.patch(`/products/${id}/stock`, { stock }),
+  // body is { stock } or { delta } — passed through as-is.
+  setStock: (id, body) => client.patch(`/products/${id}/stock`, body),
+};
+
+export const deliveryApi = {
+  list: () => client.get('/delivery-zones'),
+  listAll: () => client.get('/delivery-zones/all'),
+  create: (body) => client.post('/delivery-zones', body),
+  update: (id, body) => client.put(`/delivery-zones/${id}`, body),
+  remove: (id) => client.delete(`/delivery-zones/${id}`),
+};
+
+export const maintenanceApi = {
+  counts: () => client.get('/maintenance/counts'),
+  clear: (section, confirm) => client.post(`/maintenance/clear/${section}`, { confirm }),
 };
 
 export const orderApi = {
@@ -108,4 +122,15 @@ export const uploadApi = {
     form.append('image', file);
     return client.post('/uploads/image', form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
+  video: (file, onProgress) => {
+    const form = new FormData();
+    form.append('video', file);
+    return client.post('/uploads/video', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 5 * 60 * 1000,
+      onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
+    });
+  },
+  list: () => client.get('/uploads'),
+  remove: (filename) => client.delete(`/uploads/${encodeURIComponent(filename)}`),
 };

@@ -1,8 +1,19 @@
 const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
 
-export const toBn = (value) => String(value ?? '').replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
+/**
+ * The storefront language decides the digit system. It lives at module level
+ * (set by I18nProvider) so every money()/toBn() call follows the switch without
+ * each caller having to thread the language through.
+ */
+let formatLocale = 'bn';
+export const setFormatLocale = (locale) => {
+  formatLocale = locale;
+};
 
-/** Format a price as ৳ 1,200 (Bengali numerals). */
+export const toBn = (value) =>
+  formatLocale === 'bn' ? String(value ?? '').replace(/\d/g, (d) => BN_DIGITS[Number(d)]) : String(value ?? '');
+
+/** Format a price as ৳ 1,200 (Bengali numerals when the site is in Bangla). */
 export const money = (value) => {
   const num = Number(value || 0);
   const formatted = num.toLocaleString('en-US', { maximumFractionDigits: num % 1 === 0 ? 0 : 2 });
@@ -25,11 +36,46 @@ export const enMoney = (value) => `৳ ${enNum(Number(value || 0))}`;
 /** Trims a trailing .00 so a full record reads "100%", not "100.00%". */
 export const enPercent = (value) => `${enNum(Math.round(Number(value || 0) * 100) / 100)}%`;
 
-export const discountPercent = (price, comparePrice) => {
-  const p = Number(price);
-  const c = Number(comparePrice || 0);
-  if (!c || c <= p) return 0;
-  return Math.round(((c - p) / c) * 100);
+const round2 = (n) => Math.round(Number(n || 0) * 100) / 100;
+
+/**
+ * Everything a price label needs, in one place. A product-level discount
+ * (discount_type/discount_value) wins; the older compare_price "was" price is
+ * still honoured for products that were never given a discount.
+ * Mirrors backend/src/utils/pricing.js — the server's number is what is charged.
+ */
+export const priceInfo = (product) => {
+  const price = Number(product?.price || 0);
+  const type = product?.discount_type;
+  const value = Number(product?.discount_value || 0);
+
+  if ((type === 'percent' || type === 'fixed') && value > 0) {
+    const computed = type === 'percent' ? price * (1 - Math.min(value, 100) / 100) : price - value;
+    const final = round2(product.final_price != null ? Number(product.final_price) : Math.max(computed, 0));
+    return {
+      final,
+      original: price,
+      hasDiscount: final < price,
+      percent: price > 0 ? Math.round(((price - final) / price) * 100) : 0,
+      type,
+      value,
+      saved: round2(price - final),
+    };
+  }
+
+  const compare = Number(product?.compare_price || 0);
+  if (compare > price) {
+    return {
+      final: price,
+      original: compare,
+      hasDiscount: true,
+      percent: Math.round(((compare - price) / compare) * 100),
+      type: 'percent',
+      value: 0,
+      saved: round2(compare - price),
+    };
+  }
+  return { final: price, original: price, hasDiscount: false, percent: 0, type: 'none', value: 0, saved: 0 };
 };
 
 export const formatDate = (value) => {
@@ -46,7 +92,7 @@ export const formatDateTime = (value) => {
 export const PLACEHOLDER_IMAGE =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="#170f2a"/><text x="50%" y="50%" fill="#5b5175" font-family="sans-serif" font-size="20" text-anchor="middle">AuraCraft</text></svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a1c3a"/><stop offset="1" stop-color="#140e1d"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><text x="50%" y="50%" fill="#c9a35a" font-family="Georgia,serif" font-size="26" text-anchor="middle">Aura Craft</text></svg>`
   );
 
 export const imageOf = (product) => product?.image || product?.images?.[0]?.url || PLACEHOLDER_IMAGE;

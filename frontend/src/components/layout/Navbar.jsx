@@ -4,6 +4,9 @@ import { useStore } from '../../context/StoreContext.jsx';
 import { useCart } from '../../context/CartContext.jsx';
 import { useWishlist } from '../../hooks/useWishlist.js';
 import { useTheme } from '../../hooks/useTheme.js';
+import { useI18n } from '../../i18n/index.jsx';
+import BrandLogo from '../ui/BrandLogo.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import {
   IconCart, IconSearch, IconUser, IconMenu, IconClose, IconHeart, IconSun, IconMoon,
   IconStore, IconGrid, IconUsers,
@@ -11,16 +14,16 @@ import {
 } from '../ui/Icons.jsx';
 
 const HEAD_LINKS = [
-  { to: '/', label: 'হোম', Icon: IconStore, end: true },
-  { to: '/products', label: 'সব প্রোডাক্ট', Icon: IconGrid },
+  { to: '/', key: 'common.home', Icon: IconStore, end: true },
+  { to: '/products', key: 'common.allProducts', Icon: IconGrid },
 ];
 
 // Staff entry points are deliberately NOT listed here — the admin panel is reached
 // by typing /admin directly, so the storefront never advertises a login target.
 const TAIL_LINKS = [
-  { to: '/upcoming', label: 'ভবিষ্যতে যুক্ত হবে', Icon: IconPlus },
-  { to: '/track', label: 'অর্ডার ট্র্যাক', Icon: IconTruck },
-  { to: '/team', label: 'টিম/মেম্বার', Icon: IconUsers },
+  { to: '/upcoming', key: 'common.upcoming', Icon: IconPlus },
+  { to: '/track', key: 'common.trackOrder', Icon: IconTruck },
+  { to: '/team', key: 'common.team', Icon: IconUsers },
 ];
 
 const Navbar = () => {
@@ -28,6 +31,7 @@ const Navbar = () => {
   const { count } = useCart();
   const wishlist = useWishlist();
   const { theme, toggle: toggleTheme } = useTheme();
+  const { t, localName } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -62,13 +66,13 @@ const Navbar = () => {
   }, [drawerOpen]);
 
   const links = [
-    ...HEAD_LINKS,
+    ...HEAD_LINKS.map((l) => ({ ...l, label: t(l.key) })),
     ...navCategories.map((c) => ({
       to: `/category/${c.slug}`,
-      label: c.name_bn || c.name,
+      label: localName(c),
       Icon: categoryIcon(c.slug),
     })),
-    ...TAIL_LINKS,
+    ...TAIL_LINKS.map((l) => ({ ...l, label: t(l.key) })),
   ];
 
   const submitSearch = (e) => {
@@ -80,36 +84,38 @@ const Navbar = () => {
     setTerm('');
   };
 
+  const themeLabel = theme === 'dark' ? t('common.lightMode') : t('common.darkMode');
+
+  const tools = (
+    <div className="drawer__tools">
+      <button type="button" className="btn btn--sm" onClick={toggleTheme}>
+        {theme === 'dark' ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
+        {themeLabel}
+      </button>
+      <Link to="/wishlist" className="btn btn--sm" onClick={() => setDrawerOpen(false)}>
+        <IconHeart width={15} height={15} /> {t('common.wishlist')}
+        {wishlist.count > 0 && ` (${wishlist.count})`}
+      </Link>
+      <LanguageSwitcher />
+    </div>
+  );
+
   return (
     <>
       <div className="scroll-progress" style={{ width: `${progress}%` }} />
 
       <div className="topbar">
         <IconTruck width={14} height={14} />
-        <span>সারা বাংলাদেশে দ্রুত ডেলিভারি · ঢাকায় ২৪ ঘণ্টায় · ক্যাশ অন ডেলিভারি</span>
+        <span>{t('nav.topbar')}</span>
       </div>
 
       <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
         <div className="container nav__inner">
-          <Link to="/" className="brand">
-            <span className="brand__mark" aria-hidden="true">A</span>
-            <span>
-              <span className="brand__text">{settings.site_name || 'AuraCraft'}</span>
-              <span className="brand__sub">Elegance</span>
-            </span>
+          <Link to="/" className="brand" aria-label={settings.site_name || 'Aura Craft'}>
+            <BrandLogo name={settings.site_name || 'Aura Craft'} sub={t('nav.tagline')} size={36} />
           </Link>
 
           <nav className="nav__links">
-            <div className="drawer__tools">
-              <button type="button" className="btn btn--sm" onClick={toggleTheme}>
-                {theme === 'dark' ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
-                {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
-              </button>
-              <Link to="/wishlist" className="btn btn--sm" onClick={() => setDrawerOpen(false)}>
-                <IconHeart width={15} height={15} /> পছন্দের তালিকা
-                {wishlist.count > 0 && ` (${wishlist.count})`}
-              </Link>
-            </div>
             {links.map((link) => (
               <NavLink
                 key={link.to}
@@ -123,26 +129,27 @@ const Navbar = () => {
           </nav>
 
           <div className="nav__actions">
-            <button type="button" className="nav__btn" onClick={() => setSearchOpen((v) => !v)} aria-label="সার্চ">
+            <LanguageSwitcher className="nav__btn--tuck" />
+            <button type="button" className="nav__btn" onClick={() => setSearchOpen((v) => !v)} aria-label={t('common.search')}>
               {searchOpen ? <IconClose /> : <IconSearch />}
             </button>
             <button
               type="button"
               className="nav__btn nav__btn--tuck"
               onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'লাইট মোড চালু করুন' : 'ডার্ক মোড চালু করুন'}
-              title={theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+              aria-label={themeLabel}
+              title={themeLabel}
             >
               {theme === 'dark' ? <IconSun /> : <IconMoon />}
             </button>
-            <Link to="/wishlist" className="nav__btn nav__btn--tuck" aria-label="পছন্দের তালিকা">
+            <Link to="/wishlist" className="nav__btn nav__btn--tuck" aria-label={t('common.wishlist')}>
               <IconHeart />
               {wishlist.count > 0 && <span className="nav__count">{wishlist.count}</span>}
             </Link>
-            <Link to="/track" className="nav__btn nav__btn--tuck" aria-label="অর্ডার ট্র্যাক">
+            <Link to="/track" className="nav__btn nav__btn--tuck" aria-label={t('common.trackOrder')}>
               <IconUser />
             </Link>
-            <Link to="/cart" className="nav__btn" aria-label="কার্ট">
+            <Link to="/cart" className="nav__btn" aria-label={t('common.cart')}>
               <IconCart />
               {count > 0 && <span className="nav__count">{count}</span>}
             </Link>
@@ -150,7 +157,7 @@ const Navbar = () => {
               type="button"
               className="nav__btn nav__burger"
               onClick={() => setDrawerOpen((v) => !v)}
-              aria-label="মেনু"
+              aria-label={t('common.menu')}
             >
               {drawerOpen ? <IconClose /> : <IconMenu />}
             </button>
@@ -166,13 +173,13 @@ const Navbar = () => {
                   <input
                     className="input"
                     autoFocus
-                    placeholder="প্রোডাক্ট খুঁজুন… (যেমন: রিং, পারফিউম, ব্রেসলেট)"
+                    placeholder={t('common.searchPlaceholder')}
                     value={term}
                     onChange={(e) => setTerm(e.target.value)}
                   />
                 </div>
                 <button type="submit" className="btn btn--primary">
-                  সার্চ
+                  {t('common.search')}
                 </button>
               </div>
             </form>
@@ -185,21 +192,12 @@ const Navbar = () => {
           <div className="overlay" onClick={() => setDrawerOpen(false)} />
           <aside className="drawer">
             <div className="spread" style={{ marginBottom: 18 }}>
-              <span className="eyebrow">মেনু</span>
-              <button type="button" className="nav__btn" onClick={() => setDrawerOpen(false)} aria-label="বন্ধ">
+              <span className="eyebrow">{t('common.menu')}</span>
+              <button type="button" className="nav__btn" onClick={() => setDrawerOpen(false)} aria-label={t('common.close')}>
                 <IconClose />
               </button>
             </div>
-            <div className="drawer__tools">
-              <button type="button" className="btn btn--sm" onClick={toggleTheme}>
-                {theme === 'dark' ? <IconSun width={15} height={15} /> : <IconMoon width={15} height={15} />}
-                {theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
-              </button>
-              <Link to="/wishlist" className="btn btn--sm" onClick={() => setDrawerOpen(false)}>
-                <IconHeart width={15} height={15} /> পছন্দের তালিকা
-                {wishlist.count > 0 && ` (${wishlist.count})`}
-              </Link>
-            </div>
+            {tools}
             {links.map((link) => (
               <NavLink
                 key={link.to}

@@ -1,8 +1,12 @@
 import { query, queryOne, transaction } from '../../config/db.js';
+import { finalPriceSql } from '../../utils/pricing.js';
+
+const FINAL_PRICE = finalPriceSql('p');
 
 const PRODUCT_FIELDS = `
-  p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description,
-  p.price, p.compare_price, p.stock, p.material, p.color, p.size_options, p.warranty,
+  p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description, p.video_url,
+  p.price, p.compare_price, p.discount_type, p.discount_value, ${FINAL_PRICE} AS final_price,
+  p.stock, p.material, p.color, p.size_options, p.warranty,
   p.rating, p.rating_count, p.is_featured, p.is_active, p.created_at,
   c.name AS category_name, c.name_bn AS category_name_bn, c.slug AS category_slug, c.icon AS category_icon,
   (SELECT url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC LIMIT 1) AS image`;
@@ -10,8 +14,8 @@ const PRODUCT_FIELDS = `
 const SORTS = {
   newest: 'p.created_at DESC, p.id DESC',
   oldest: 'p.created_at ASC',
-  price_asc: 'p.price ASC',
-  price_desc: 'p.price DESC',
+  price_asc: `${FINAL_PRICE} ASC`,
+  price_desc: `${FINAL_PRICE} DESC`,
   name_asc: 'p.name ASC',
   rating: 'p.rating DESC, p.rating_count DESC',
   featured: 'p.is_featured DESC, p.created_at DESC',
@@ -29,8 +33,8 @@ const buildFilters = (filters) => {
     const like = `%${filters.search}%`;
     params.push(like, like, like, like);
   }
-  if (filters.minPrice != null) { where.push('p.price >= ?'); params.push(filters.minPrice); }
-  if (filters.maxPrice != null) { where.push('p.price <= ?'); params.push(filters.maxPrice); }
+  if (filters.minPrice != null) { where.push(`${FINAL_PRICE} >= ?`); params.push(filters.minPrice); }
+  if (filters.maxPrice != null) { where.push(`${FINAL_PRICE} <= ?`); params.push(filters.maxPrice); }
   if (filters.material) { where.push('p.material = ?'); params.push(filters.material); }
   if (filters.color) { where.push('p.color = ?'); params.push(filters.color); }
   if (filters.featured) where.push('p.is_featured = 1');
@@ -70,7 +74,7 @@ export const findFacets = async (filters = {}) => {
     params
   );
   const range = await queryOne(
-    `SELECT MIN(p.price) AS min_price, MAX(p.price) AS max_price FROM products p
+    `SELECT MIN(${FINAL_PRICE}) AS min_price, MAX(${FINAL_PRICE}) AS max_price FROM products p
      JOIN categories c ON c.id = p.category_id ${clause}`,
     params
   );
@@ -149,3 +153,5 @@ export const update = (id, data, images) =>
   });
 
 export const remove = (id) => query('DELETE FROM products WHERE id = ?', [id]);
+
+export const removeAll = () => query('DELETE FROM products');

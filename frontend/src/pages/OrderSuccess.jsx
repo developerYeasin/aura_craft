@@ -5,8 +5,10 @@ import { Loader, ErrorBox } from '../components/ui/index.jsx';
 import { IconBadgeCheck, IconArrowRight } from '../components/ui/Icons.jsx';
 import OrderSummaryCard from '../components/product/OrderSummaryCard.jsx';
 import { trackEvent } from '../utils/tracking.js';
+import { useI18n } from '../i18n/index.jsx';
 
 const OrderSuccess = () => {
+  const { t } = useI18n();
   const { code } = useParams();
   const location = useLocation();
   const [order, setOrder] = useState(location.state?.order || null);
@@ -48,17 +50,14 @@ const OrderSuccess = () => {
         <div className="feature__ico" style={{ margin: '0 auto 18px', width: 58, height: 58, color: 'var(--ok)', background: 'rgba(61,220,151,.14)', borderColor: 'rgba(61,220,151,.3)' }}>
           <IconBadgeCheck width={26} height={26} />
         </div>
-        <span className="eyebrow eyebrow--both">Order Confirmed</span>
-        <h1 className="display t-h2" style={{ margin: '10px 0 10px' }}>ধন্যবাদ! অর্ডার সম্পন্ন হয়েছে</h1>
-        <p className="muted">
-          আপনার অর্ডার কোড <b className="gold-text num">{order.order_code}</b> — এটি সংরক্ষণ করে রাখুন।
-          আমাদের টিম শীঘ্রই আপনার সাথে যোগাযোগ করবে।
-        </p>
+        <span className="eyebrow eyebrow--both">{t('success.eyebrow')}</span>
+        <h1 className="display t-h2" style={{ margin: '10px 0 10px' }}>{t('success.title')}</h1>
+        <p className="muted">{t('success.code', { code: order.order_code })}</p>
         <div className="row gap-8" style={{ justifyContent: 'center', flexWrap: 'wrap', marginTop: 12 }}>
           <Link to="/products" className="btn btn--primary btn--sm">
-            আরও কেনাকাটা <IconArrowRight width={14} height={14} />
+            {t('success.moreShopping')} <IconArrowRight width={14} height={14} />
           </Link>
-          <Link to={`/track?code=${order.order_code}`} className="btn btn--sm">অর্ডার ট্র্যাক</Link>
+          <Link to={`/track?code=${order.order_code}`} className="btn btn--sm">{t('common.trackOrder')}</Link>
         </div>
       </div>
 

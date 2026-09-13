@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import BackToTop from '../ui/BackToTop.jsx';
+import MobileTabBar from './MobileTabBar.jsx';
 
 const PublicLayout = () => {
   const { pathname } = useLocation();
@@ -19,6 +20,7 @@ const PublicLayout = () => {
       </main>
       <Footer />
       <BackToTop />
+      <MobileTabBar />
     </div>
   );
 };

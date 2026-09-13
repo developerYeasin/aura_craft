@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Field } from '../../components/ui/index.jsx';
+import BrandLogo from '../../components/ui/BrandLogo.jsx';
 
 const Login = () => {
   const { login, user, loading } = useAuth();
@@ -36,8 +37,7 @@ const Login = () => {
     <div className="login-page">
       <div className="card card--pad login-card">
         <Link to="/" className="brand" style={{ justifyContent: 'center', marginBottom: 10 }}>
-          <span className="brand__mark" aria-hidden="true">A</span>
-          <span className="brand__text">AuraCraft</span>
+          <BrandLogo size={42} />
         </Link>
         <div className="text-center" style={{ marginBottom: 22 }}>
           <h1 className="display t-h3">Admin Login</h1>

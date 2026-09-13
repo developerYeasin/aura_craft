@@ -5,6 +5,7 @@ import { StoreProvider } from './context/StoreContext.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { NotificationProvider } from './context/NotificationContext.jsx';
+import { I18nProvider, useI18n } from './i18n/index.jsx';
 import PublicLayout from './components/layout/PublicLayout.jsx';
 import AdminLayout, { RequireRole } from './components/layout/AdminLayout.jsx';
 import { Loader } from './components/ui/index.jsx';
@@ -20,6 +21,7 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder.jsx'));
 const Team = lazy(() => import('./pages/Team.jsx'));
 const Wishlist = lazy(() => import('./pages/Wishlist.jsx'));
 const Upcoming = lazy(() => import('./pages/Upcoming.jsx'));
+const Brand = lazy(() => import('./pages/Brand.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 const Login = lazy(() => import('./pages/admin/Login.jsx'));
@@ -34,61 +36,79 @@ const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
 const AdminCoupons = lazy(() => import('./pages/admin/AdminCoupons.jsx'));
 const AdminFraud = lazy(() => import('./pages/admin/AdminFraud.jsx'));
 const AdminMarketing = lazy(() => import('./pages/admin/AdminMarketing.jsx'));
+const AdminDelivery = lazy(() => import('./pages/admin/AdminDelivery.jsx'));
+const AdminMedia = lazy(() => import('./pages/admin/AdminMedia.jsx'));
+
+/**
+ * Keying the routes by language remounts the pages on a switch, so every
+ * money()/toBn() call re-renders with the new digit system too.
+ */
+const AppRoutes = () => {
+  const { lang } = useI18n();
+  return (
+    <Suspense fallback={<Loader />}>
+      <Routes key={lang}>
+        <Route element={<PublicLayout />}>
+          <Route index element={<Home />} />
+          <Route path="/products" element={<CatalogPage mode="all" />} />
+          <Route path="/category/:slug" element={<CatalogPage mode="category" />} />
+          <Route path="/product/:slug" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/order-success/:code" element={<OrderSuccess />} />
+          <Route path="/track" element={<TrackOrder />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/upcoming" element={<Upcoming />} />
+          <Route path="/brand" element={<Brand />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+
+        <Route path="/admin/login" element={<Login />} />
+        {/* legacy entry point kept working, but it must land on the guarded route */}
+        <Route path="/immortal" element={<Navigate to="/admin/users" replace />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="categories" element={<AdminCategories />} />
+          <Route path="media" element={<AdminMedia />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="customers" element={<AdminCustomers />} />
+          <Route path="coupons" element={<AdminCoupons />} />
+          <Route path="delivery" element={<AdminDelivery />} />
+          <Route path="fraud" element={<AdminFraud />} />
+          <Route path="marketing" element={<AdminMarketing />} />
+          <Route path="team" element={<AdminTeam />} />
+          <Route path="settings" element={<AdminSettings />} />
+          <Route
+            path="users"
+            element={
+              <RequireRole roles={['immortal']}>
+                <AdminUsers />
+              </RequireRole>
+            }
+          />
+        </Route>
+      </Routes>
+    </Suspense>
+  );
+};
 
 const App = () => (
   <BrowserRouter>
-    <ToastProvider>
-      <AuthProvider>
-        <NotificationProvider>
-          <StoreProvider>
-            <CartProvider>
-            <Suspense fallback={<Loader />}>
-              <Routes>
-                <Route element={<PublicLayout />}>
-                  <Route index element={<Home />} />
-                  <Route path="/products" element={<CatalogPage mode="all" />} />
-                  <Route path="/category/:slug" element={<CatalogPage mode="category" />} />
-                  <Route path="/product/:slug" element={<ProductDetails />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/order-success/:code" element={<OrderSuccess />} />
-                  <Route path="/track" element={<TrackOrder />} />
-                  <Route path="/team" element={<Team />} />
-                  <Route path="/wishlist" element={<Wishlist />} />
-                  <Route path="/upcoming" element={<Upcoming />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-
-                <Route path="/admin/login" element={<Login />} />
-                {/* legacy entry point kept working, but it must land on the guarded route */}
-                <Route path="/immortal" element={<Navigate to="/admin/users" replace />} />
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="products" element={<AdminProducts />} />
-                  <Route path="categories" element={<AdminCategories />} />
-                  <Route path="orders" element={<AdminOrders />} />
-                  <Route path="customers" element={<AdminCustomers />} />
-                  <Route path="coupons" element={<AdminCoupons />} />
-                  <Route path="fraud" element={<AdminFraud />} />
-                  <Route path="marketing" element={<AdminMarketing />} />
-                  <Route path="team" element={<AdminTeam />} />
-                  <Route path="settings" element={<AdminSettings />} />
-                  <Route
-                    path="users"
-                    element={
-                      <RequireRole roles={['immortal']}>
-                        <AdminUsers />
-                      </RequireRole>
-                    }
-                  />
-                </Route>
-              </Routes>
-            </Suspense>
-            </CartProvider>
-          </StoreProvider>
-        </NotificationProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <I18nProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <StoreProvider>
+              <CartProvider>
+                <AppRoutes />
+              </CartProvider>
+            </StoreProvider>
+          </NotificationProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </I18nProvider>
   </BrowserRouter>
 );
 

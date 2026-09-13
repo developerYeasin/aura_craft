@@ -1,27 +1,25 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext.jsx';
-import { useStore } from '../context/StoreContext.jsx';
+import { useI18n } from '../i18n/index.jsx';
 import { Empty, SectionHead } from '../components/ui/index.jsx';
 import { IconMinus, IconPlus, IconTrash, IconArrowRight, IconCart } from '../components/ui/Icons.jsx';
 import { money, toBn, PLACEHOLDER_IMAGE } from '../utils/format.js';
 
 const Cart = () => {
   const { items, setQuantity, remove, clear, subtotal, count } = useCart();
-  const { settings } = useStore();
+  const { t } = useI18n();
   const navigate = useNavigate();
-
-  const delivery = Number(settings.delivery_charge_inside || 60);
 
   if (items.length === 0) {
     return (
       <div className="container section">
         <Empty
           icon={IconCart}
-          title="আপনার কার্ট খালি"
-          text="পছন্দের প্রোডাক্ট যোগ করে অর্ডার সম্পন্ন করুন।"
+          title={t('cart.empty')}
+          text={t('cart.emptyText')}
           action={
             <Link to="/products" className="btn btn--primary btn--sm" style={{ marginTop: 14 }}>
-              শপিং শুরু করুন
+              {t('cart.startShopping')}
             </Link>
           }
         />
@@ -29,9 +27,14 @@ const Cart = () => {
     );
   }
 
+  const savings = items.reduce(
+    (sum, i) => sum + (i.original_price ? (i.original_price - i.price) * i.quantity : 0),
+    0
+  );
+
   return (
     <div className="container section--tight">
-      <SectionHead center eyebrow="Your bag" title="আপনার কার্ট" text={`মোট ${toBn(count)} টি আইটেম`} />
+      <SectionHead center eyebrow={t('cart.eyebrow')} title={t('cart.title')} text={t('cart.itemCount', { n: toBn(count) })} />
 
       <div className="checkout-grid">
         <div className="card card--pad">
@@ -42,20 +45,32 @@ const Cart = () => {
                 <Link to={`/product/${item.slug}`} className="cart-line__name">
                   {item.name}
                 </Link>
-                {item.variant && <span className="badge badge--mute">সাইজ: {item.variant}</span>}
-                <div className="mute-2">{money(item.price)} / টি</div>
+                {item.variant && <span className="badge badge--mute">{t('cart.sizeLabel', { v: item.variant })}</span>}
+                <div className="mute-2">
+                  {item.original_price ? <s style={{ marginRight: 6 }}>{money(item.original_price)}</s> : null}
+                  {t('cart.perUnit', { price: money(item.price) })}
+                </div>
                 <div className="row gap-8" style={{ marginTop: 8 }}>
                   <div className="qty">
-                    <button type="button" onClick={() => setQuantity(item.id, item.variant, item.quantity - 1)} disabled={item.quantity <= 1}>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(item.id, item.variant, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      aria-label={t('product.decrease')}
+                    >
                       <IconMinus width={13} height={13} />
                     </button>
-                    <input value={toBn(item.quantity)} readOnly aria-label="পরিমাণ" />
-                    <button type="button" onClick={() => setQuantity(item.id, item.variant, item.quantity + 1)}>
+                    <input value={toBn(item.quantity)} readOnly aria-label={t('product.quantity')} />
+                    <button
+                      type="button"
+                      onClick={() => setQuantity(item.id, item.variant, item.quantity + 1)}
+                      aria-label={t('product.increase')}
+                    >
                       <IconPlus width={13} height={13} />
                     </button>
                   </div>
                   <button type="button" className="btn btn--danger btn--xs" onClick={() => remove(item.id, item.variant)}>
-                    <IconTrash width={13} height={13} /> সরান
+                    <IconTrash width={13} height={13} /> {t('common.remove')}
                   </button>
                 </div>
               </div>
@@ -65,33 +80,39 @@ const Cart = () => {
 
           <div className="row gap-8" style={{ marginTop: 16, justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <Link to="/products" className="btn btn--ghost btn--sm">
-              ← আরও কেনাকাটা
+              {t('cart.keepShopping')}
             </Link>
             <button type="button" className="btn btn--danger btn--sm" onClick={clear}>
-              কার্ট খালি করুন
+              {t('cart.clear')}
             </button>
           </div>
         </div>
 
         <div className="card card--pad summary">
-          <h3 style={{ marginBottom: 12 }}>অর্ডার সামারি</h3>
+          <h3 style={{ marginBottom: 12 }}>{t('cart.summary')}</h3>
           <div className="summary__row">
-            <span>সাবটোটাল</span>
+            <span>{t('common.subtotal')}</span>
             <span>{money(subtotal)}</span>
           </div>
+          {savings > 0 && (
+            <div className="summary__row summary__row--save">
+              <span>{t('checkout.productSavings')}</span>
+              <span>− {money(savings)}</span>
+            </div>
+          )}
           <div className="summary__row">
-            <span>ডেলিভারি চার্জ (আনুমানিক)</span>
-            <span>{money(delivery)}</span>
+            <span>{t('common.deliveryCharge')}</span>
+            <span className="mute-2">{t('cart.deliveryLater')}</span>
           </div>
           <div className="summary__row summary__row--total">
-            <span>সর্বমোট</span>
-            <span>{money(subtotal + delivery)}</span>
+            <span>{t('common.total')}</span>
+            <span>{money(subtotal)}+</span>
           </div>
           <button type="button" className="btn btn--primary btn--block" style={{ marginTop: 14 }} onClick={() => navigate('/checkout')}>
-            চেকআউট করুন <IconArrowRight width={15} height={15} />
+            {t('cart.checkout')} <IconArrowRight width={15} height={15} />
           </button>
           <p className="mute-2" style={{ marginTop: 10, marginBottom: 0 }}>
-            চেকআউটে ডেলিভারি এলাকা অনুযায়ী চার্জ চূড়ান্ত হবে।
+            {t('cart.deliveryNote')}
           </p>
         </div>
       </div>

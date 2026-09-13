@@ -2,17 +2,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useWishlist } from '../../hooks/useWishlist.js';
-import { money, discountPercent, imageOf, toBn } from '../../utils/format.js';
+import { useI18n } from '../../i18n/index.jsx';
+import { money, priceInfo, imageOf, toBn } from '../../utils/format.js';
 import { IconHeart, IconCart, IconEye, IconArrowRight } from '../ui/Icons.jsx';
 import { Rating } from '../ui/index.jsx';
+import { DiscountBadge } from './PriceTag.jsx';
 
 const ProductCard = ({ product, compact = false }) => {
   const { add } = useCart();
   const toast = useToast();
   const navigate = useNavigate();
   const { has, toggle } = useWishlist();
+  const { t, localName } = useI18n();
 
-  const off = discountPercent(product.price, product.compare_price);
+  const price = priceInfo(product);
   const outOfStock = Number(product.stock) <= 0;
   const lowStock = !outOfStock && Number(product.stock) <= 5;
   const saved = has(product.id);
@@ -26,7 +29,7 @@ const ProductCard = ({ product, compact = false }) => {
   const addToCart = () => {
     if (outOfStock) return;
     add(product, 1, null);
-    toast.success(`${product.name} কার্টে যোগ হয়েছে`);
+    toast.success(t('common.addedToCart', { name: product.name }));
   };
 
   return (
@@ -37,17 +40,17 @@ const ProductCard = ({ product, compact = false }) => {
         </Link>
 
         <div className="pcard__flags">
-          {off > 0 && <span className="badge badge--solid">-{toBn(off)}%</span>}
-          {product.is_featured === 1 && <span className="badge badge--gold">ফিচার্ড</span>}
-          {outOfStock && <span className="badge badge--danger">স্টক নেই</span>}
-          {lowStock && <span className="badge badge--warn">শেষ {toBn(product.stock)} টি</span>}
+          <DiscountBadge product={product} info={price} />
+          {product.is_featured === 1 && <span className="badge badge--gold">{t('common.featured')}</span>}
+          {outOfStock && <span className="badge badge--danger">{t('common.outOfStock')}</span>}
+          {lowStock && <span className="badge badge--warn">{t('common.onlyLeft', { n: toBn(product.stock) })}</span>}
         </div>
 
         <button
           type="button"
           className={`pcard__fav${saved ? ' is-on' : ''}`}
           onClick={() => toggle(product.id)}
-          aria-label={saved ? 'পছন্দের তালিকা থেকে সরান' : 'পছন্দের তালিকায় রাখুন'}
+          aria-label={saved ? t('common.removeFromList') : t('common.saveToList')}
           aria-pressed={saved}
         >
           <IconHeart width={15} height={15} fill={saved ? 'currentColor' : 'none'} />
@@ -57,15 +60,15 @@ const ProductCard = ({ product, compact = false }) => {
         <div className="pcard__hover">
           {compact ? (
             <button type="button" className="btn btn--primary" onClick={orderNow} disabled={outOfStock}>
-              অর্ডার করুন <IconArrowRight width={14} height={14} />
+              {t('common.orderNow')} <IconArrowRight width={14} height={14} />
             </button>
           ) : (
             <>
               <Link to={`/product/${product.slug}`} className="btn btn--outline">
-                <IconEye width={14} height={14} /> বিস্তারিত
+                <IconEye width={14} height={14} /> {t('common.details')}
               </Link>
               <button type="button" className="btn btn--primary" onClick={addToCart} disabled={outOfStock}>
-                <IconCart width={14} height={14} /> কার্টে
+                <IconCart width={14} height={14} /> {t('common.addShort')}
               </button>
             </>
           )}
@@ -73,7 +76,7 @@ const ProductCard = ({ product, compact = false }) => {
       </div>
 
       <div className="pcard__body">
-        <span className="pcard__cat">{product.category_name_bn || product.category_name}</span>
+        <span className="pcard__cat">{localName({ name: product.category_name, name_bn: product.category_name_bn })}</span>
         <Link to={`/product/${product.slug}`} className="pcard__name">
           {product.name}
         </Link>
@@ -81,8 +84,9 @@ const ProductCard = ({ product, compact = false }) => {
           <Rating value={Number(product.rating)} count={product.rating_count} />
         )}
         <div className="pcard__price">
-          <b>{money(product.price)}</b>
-          {off > 0 && <s>{money(product.compare_price)}</s>}
+          <b>{money(price.final)}</b>
+          {price.hasDiscount && <s>{money(price.original)}</s>}
+          {price.hasDiscount && <span className="pcard__save">{t('product.youSave', { amount: money(price.saved) })}</span>}
         </div>
       </div>
     </article>

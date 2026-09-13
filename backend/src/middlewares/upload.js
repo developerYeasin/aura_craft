@@ -14,6 +14,15 @@ const storage = multer.diskStorage({
   },
 });
 
+export const uploadVideo = multer({
+  storage,
+  limits: { fileSize: 60 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^video\/(mp4|webm|quicktime|ogg)$/.test(file.mimetype)) return cb(null, true);
+    cb(ApiError.badRequest('Only MP4, WebM, MOV or OGG videos are allowed'));
+  },
+});
+
 export const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },

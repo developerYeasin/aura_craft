@@ -5,13 +5,15 @@ import { productApi } from '../api/index.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useWishlist } from '../hooks/useWishlist.js';
+import { useI18n } from '../i18n/index.jsx';
 import ProductCard from '../components/product/ProductCard.jsx';
+import { DiscountBadge } from '../components/product/PriceTag.jsx';
 import { Loader, ErrorBox, Rating, Field, SectionHead, Reveal } from '../components/ui/index.jsx';
 import {
   IconMinus, IconPlus, IconCart, IconArrowRight, IconHeart,
   IconTruck, IconWallet, IconRefresh, IconShield, categoryIcon,
 } from '../components/ui/Icons.jsx';
-import { money, discountPercent, PLACEHOLDER_IMAGE, toBn } from '../utils/format.js';
+import { money, priceInfo, PLACEHOLDER_IMAGE, toBn } from '../utils/format.js';
 
 const ProductDetails = () => {
   const { slug } = useParams();
@@ -19,6 +21,7 @@ const ProductDetails = () => {
   const { add } = useCart();
   const toast = useToast();
   const { has, toggle } = useWishlist();
+  const { t, localName } = useI18n();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +42,7 @@ const ProductDetails = () => {
       .then((res) => {
         setProduct(res.data);
         trackEvent('view_item', {
-          value: Number(res.data?.price || 0),
+          value: priceInfo(res.data).final,
           items: [toItem(res.data)],
           id: res.data?.id,
           name: res.data?.name,
@@ -63,20 +66,23 @@ const ProductDetails = () => {
     return () => observer.disconnect();
   }, [product]);
 
-  if (loading) return <div className="container"><Loader /></div>;
+  if (loading) return <div className="container"><Loader label={t('common.loading')} /></div>;
   if (error) return <div className="container"><ErrorBox message={error} onRetry={load} /></div>;
   if (!product) return null;
 
   const images = product.images?.length ? product.images : [{ url: PLACEHOLDER_IMAGE, id: 0 }];
-  const off = discountPercent(product.price, product.compare_price);
+  const hasVideo = Boolean(product.video_url);
+  const showingVideo = hasVideo && activeImage === images.length;
+  const price = priceInfo(product);
   const outOfStock = Number(product.stock) <= 0;
   const sizes = (product.size_options || '').split('/').map((s) => s.trim()).filter(Boolean);
   const CatIcon = categoryIcon(product.category_slug);
   const saved = has(product.id);
+  const categoryName = localName({ name: product.category_name, name_bn: product.category_name_bn });
 
   const addToCart = () => {
     add(product, quantity, variant || null);
-    toast.success('কার্টে যোগ করা হয়েছে');
+    toast.success(t('common.addedToCartShort'));
   };
 
   const orderNow = () => {
@@ -88,8 +94,8 @@ const ProductDetails = () => {
     <>
       <div className="container">
         <nav className="crumbs" style={{ marginTop: 24 }}>
-          <Link to="/">হোম</Link> <span>›</span>
-          <Link to={`/category/${product.category_slug}`}>{product.category_name_bn || product.category_name}</Link>
+          <Link to="/">{t('common.home')}</Link> <span>›</span>
+          <Link to={`/category/${product.category_slug}`}>{categoryName}</Link>
           <span>›</span>
           <span className="faint">{product.name}</span>
         </nav>
@@ -104,14 +110,28 @@ const ProductDetails = () => {
                   key={img.id || i}
                   className={`gallery__thumb${i === activeImage ? ' is-active' : ''}`}
                   onClick={() => setActiveImage(i)}
-                  aria-label={`ছবি ${i + 1}`}
+                  aria-label={t('product.image', { n: toBn(i + 1) })}
                 >
                   <img src={img.url} alt="" loading="lazy" />
                 </button>
               ))}
+              {hasVideo && (
+                <button
+                  type="button"
+                  className={`gallery__thumb gallery__thumb--video${showingVideo ? ' is-active' : ''}`}
+                  onClick={() => setActiveImage(images.length)}
+                  aria-label={t('product.video')}
+                >
+                  ▶ {t('product.video')}
+                </button>
+              )}
             </div>
             <div className="gallery__main">
-              <img src={images[activeImage]?.url} alt={product.name} />
+              {showingVideo ? (
+                <video className="gallery__video" src={product.video_url} controls autoPlay muted playsInline poster={images[0]?.url} />
+              ) : (
+                <img src={images[activeImage]?.url} alt={product.name} />
+              )}
             </div>
           </div>
 
@@ -120,43 +140,44 @@ const ProductDetails = () => {
             <div className="row gap-12 wrap" style={{ marginBottom: 10 }}>
               <span className="chip">
                 <CatIcon width={14} height={14} />
-                {product.category_name_bn || product.category_name}
+                {categoryName}
               </span>
-              {product.is_featured === 1 && <span className="badge badge--gold">ফিচার্ড</span>}
+              {product.is_featured === 1 && <span className="badge badge--gold">{t('common.featured')}</span>}
             </div>
 
             <h1 className="display t-h1">{product.name}</h1>
 
             <div className="row gap-12 wrap" style={{ marginTop: 10 }}>
               <Rating value={product.rating} count={product.rating_count} />
-              <span className="mute-2">SKU: {product.sku}</span>
+              {product.sku && <span className="mute-2">SKU: {product.sku}</span>}
             </div>
 
             <div className="pdp__price">
-              <b>{money(product.price)}</b>
-              {off > 0 && (
+              <b>{money(price.final)}</b>
+              {price.hasDiscount && (
                 <>
-                  <s>{money(product.compare_price)}</s>
-                  <span className="badge badge--pink">{toBn(off)}% ছাড়</span>
+                  <s title={t('product.regularPrice')}>{money(price.original)}</s>
+                  <DiscountBadge product={product} info={price} long />
                 </>
               )}
               <span className={`badge ${outOfStock ? 'badge--danger' : 'badge--ok'}`}>
-                {outOfStock ? 'স্টক নেই' : `স্টকে ${toBn(product.stock)} টি`}
+                {outOfStock ? t('common.outOfStock') : t('common.inStock', { n: toBn(product.stock) })}
               </span>
+              {price.hasDiscount && <span className="pdp__save">{t('product.youSave', { amount: money(price.saved) })}</span>}
             </div>
 
             <p className="muted">{product.short_description}</p>
 
             <ul className="spec-list">
-              {product.material && <li><b>উপাদান</b> {product.material}</li>}
-              {product.color && <li><b>রঙ</b> {product.color}</li>}
-              {product.warranty && <li><b>ওয়ারেন্টি</b> {product.warranty}</li>}
+              {product.material && <li><b>{t('product.material')}</b> {product.material}</li>}
+              {product.color && <li><b>{t('product.color')}</b> {product.color}</li>}
+              {product.warranty && <li><b>{t('product.warranty')}</b> {product.warranty}</li>}
             </ul>
 
             {/* ---------------------------------------- buy box */}
             <div className="card card--pad" ref={buyRef} style={{ marginTop: 22 }}>
               {sizes.length > 1 && (
-                <Field label="সাইজ / ভ্যারিয়েন্ট">
+                <Field label={t('product.variant')}>
                   <div className="swatches">
                     {sizes.map((s) => (
                       <button
@@ -174,30 +195,30 @@ const ProductDetails = () => {
 
               <div className="row gap-12 wrap" style={{ marginTop: 6 }}>
                 <div className="qty">
-                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1} aria-label="কমান">
+                  <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} disabled={quantity <= 1} aria-label={t('product.decrease')}>
                     <IconMinus width={14} height={14} />
                   </button>
-                  <input value={toBn(quantity)} readOnly aria-label="পরিমাণ" />
+                  <input value={toBn(quantity)} readOnly aria-label={t('product.quantity')} />
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.min(q + 1, Math.max(1, product.stock)))}
                     disabled={quantity >= product.stock}
-                    aria-label="বাড়ান"
+                    aria-label={t('product.increase')}
                   >
                     <IconPlus width={14} height={14} />
                   </button>
                 </div>
                 <button type="button" className="btn btn--primary" onClick={orderNow} disabled={outOfStock}>
-                  অর্ডার করুন <IconArrowRight width={15} height={15} />
+                  {t('common.orderNow')} <IconArrowRight width={15} height={15} />
                 </button>
                 <button type="button" className="btn btn--outline" onClick={addToCart} disabled={outOfStock}>
-                  <IconCart width={15} height={15} /> কার্টে যোগ করুন
+                  <IconCart width={15} height={15} /> {t('common.addToCart')}
                 </button>
                 <button
                   type="button"
                   className="btn btn--icon btn--outline"
                   onClick={() => toggle(product.id)}
-                  aria-label="পছন্দের তালিকা"
+                  aria-label={t('common.wishlist')}
                   aria-pressed={saved}
                 >
                   <IconHeart width={16} height={16} fill={saved ? 'currentColor' : 'none'} style={{ color: saved ? 'var(--pink)' : undefined }} />
@@ -205,17 +226,20 @@ const ProductDetails = () => {
               </div>
 
               <div className="summary__row summary__row--total" style={{ marginTop: 14 }}>
-                <span>সাবটোটাল</span>
-                <span>{money(Number(product.price) * quantity)}</span>
+                <span>{t('common.subtotal')}</span>
+                <span>
+                  {price.hasDiscount && <s>{money(price.original * quantity)}</s>}
+                  {money(price.final * quantity)}
+                </span>
               </div>
             </div>
 
             <div className="features features--row" style={{ marginTop: 18, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
               {[
-                { Icon: IconTruck, title: 'দ্রুত ডেলিভারি' },
-                { Icon: IconWallet, title: 'ক্যাশ অন ডেলিভারি' },
-                { Icon: IconRefresh, title: '৭ দিনে রিপ্লেসমেন্ট' },
-                { Icon: IconShield, title: '১০০% অরিজিনাল' },
+                { Icon: IconTruck, title: t('product.fastDelivery') },
+                { Icon: IconWallet, title: t('product.cod') },
+                { Icon: IconRefresh, title: t('product.replacement') },
+                { Icon: IconShield, title: t('product.original') },
               ].map((f) => (
                 <div className="card feature" key={f.title} style={{ padding: 14 }}>
                   <div className="feature__ico" style={{ width: 34, height: 34 }}>
@@ -231,9 +255,9 @@ const ProductDetails = () => {
         {/* ------------------------------------------------ tabs */}
         <div className="tabs">
           {[
-            ['description', 'বিস্তারিত'],
-            ['specs', 'স্পেসিফিকেশন'],
-            ['delivery', 'ডেলিভারি ও রিটার্ন'],
+            ['description', t('product.tabDescription')],
+            ['specs', t('product.tabSpecs')],
+            ['delivery', t('product.tabDelivery')],
           ].map(([key, label]) => (
             <button type="button" key={key} className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}>
               {label}
@@ -249,21 +273,22 @@ const ProductDetails = () => {
           )}
           {tab === 'specs' && (
             <ul className="spec-list" style={{ margin: 0 }}>
-              <li><b>ক্যাটাগরি</b> {product.category_name_bn || product.category_name}</li>
-              <li><b>উপাদান</b> {product.material || '—'}</li>
-              <li><b>রঙ</b> {product.color || '—'}</li>
-              <li><b>সাইজ</b> {product.size_options || '—'}</li>
-              <li><b>ওয়ারেন্টি</b> {product.warranty || '—'}</li>
-              <li><b>স্টক</b> {toBn(product.stock)} টি</li>
+              <li><b>{t('product.category')}</b> {categoryName}</li>
+              <li><b>{t('product.material')}</b> {product.material || '—'}</li>
+              <li><b>{t('product.color')}</b> {product.color || '—'}</li>
+              <li><b>{t('product.size')}</b> {product.size_options || '—'}</li>
+              <li><b>{t('product.warranty')}</b> {product.warranty || '—'}</li>
+              <li><b>{t('product.stock')}</b> {t('common.pieces', { n: toBn(product.stock) })}</li>
               <li><b>SKU</b> {product.sku || '—'}</li>
             </ul>
           )}
           {tab === 'delivery' && (
             <ul className="spec-list" style={{ margin: 0 }}>
-              <li><b>ঢাকার ভেতরে</b> ২৪–৪৮ ঘণ্টার মধ্যে ডেলিভারি</li>
-              <li><b>ঢাকার বাইরে</b> ২–৪ কর্মদিবস</li>
-              <li><b>পেমেন্ট</b> ক্যাশ অন ডেলিভারি, বিকাশ, নগদ</li>
-              <li><b>রিটার্ন</b> পণ্যে সমস্যা থাকলে ৭ দিনের মধ্যে রিপ্লেসমেন্ট</li>
+              <li><b>{t('product.freeAreas')}</b> {t('product.freeAreasText')}</li>
+              <li><b>{t('product.insideDhaka')}</b> {t('product.insideDhakaText')}</li>
+              <li><b>{t('product.outsideDhaka')}</b> {t('product.outsideDhakaText')}</li>
+              <li><b>{t('product.payment')}</b> {t('product.paymentText')}</li>
+              <li><b>{t('product.returns')}</b> {t('product.returnsText')}</li>
             </ul>
           )}
         </div>
@@ -271,11 +296,11 @@ const ProductDetails = () => {
         {product.related?.length > 0 && (
           <section className="section--tight">
             <SectionHead
-              eyebrow="You may also like"
-              title="সম্পর্কিত প্রোডাক্ট"
+              eyebrow={t('product.relatedEyebrow')}
+              title={t('product.related')}
               action={
                 <Link to={`/category/${product.category_slug}`} className="btn btn--outline btn--sm">
-                  সব দেখুন <IconArrowRight width={14} height={14} />
+                  {t('common.seeAll')} <IconArrowRight width={14} height={14} />
                 </Link>
               }
             />
@@ -297,15 +322,15 @@ const ProductDetails = () => {
           <div className="buybar__info">
             <b>{product.name}</b>
             <span className="mute-2">
-              {money(product.price)} · {toBn(quantity)} টি{variant ? ` · ${variant}` : ''}
+              {money(price.final)} · {t('common.pieces', { n: toBn(quantity) })}{variant ? ` · ${variant}` : ''}
             </span>
           </div>
           <div className="buybar__actions">
             <button type="button" className="btn btn--outline btn--sm" onClick={addToCart}>
-              <IconCart width={14} height={14} /> Add
+              <IconCart width={14} height={14} /> {t('product.add')}
             </button>
             <button type="button" className="btn btn--primary btn--sm" onClick={orderNow}>
-              অর্ডার করুন
+              {t('common.orderNow')}
             </button>
           </div>
         </div>

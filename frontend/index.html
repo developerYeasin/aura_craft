@@ -4,16 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#faf7f2" />
-    <meta name="description" content="AuraCraft — প্রিমিয়াম জুয়েলারি, পারফিউম ও এক্সক্লুসিভ গিফট আইটেম।" />
+    <meta name="theme-color" content="#f6f0e6" />
+    <meta name="description" content="Aura Craft — প্রিমিয়াম জুয়েলারি, পারফিউম ও এক্সক্লুসিভ গিফট আইটেম।" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <title>AuraCraft — Style • Elegance • You</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>Aura Craft — Style • Elegance • You</title>
   </head>
   <body>
     <script>
-      // Set the theme before first paint so the page never flashes the wrong ground.
+      // Set theme and language before first paint so the page never flashes the wrong ground.
       (function () {
         try {
           var saved = localStorage.getItem('auracraft-theme');
@@ -22,8 +22,10 @@
             : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
           document.documentElement.dataset.theme = theme;
           if (theme === 'dark') {
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0b1220');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#080b15');
           }
+          var lang = localStorage.getItem('auracraft-lang');
+          if (lang) document.documentElement.lang = lang;
         } catch (e) {}
       })();
     </script>

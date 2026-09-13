@@ -14,6 +14,8 @@ import couponRoutes from './modules/coupons/coupon.routes.js';
 import customerRoutes from './modules/customers/customer.routes.js';
 import fraudRoutes from './modules/fraud/fraud.routes.js';
 import feedRoutes from './modules/marketing/feed.routes.js';
+import deliveryRoutes from './modules/delivery/delivery.routes.js';
+import maintenanceRoutes from './modules/maintenance/maintenance.routes.js';
 
 const router = Router();
 
@@ -40,6 +42,8 @@ router.use('/courier', courierRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/customers', customerRoutes);
 router.use('/fraud', fraudRoutes);
+router.use('/delivery-zones', deliveryRoutes);
+router.use('/maintenance', maintenanceRoutes);
 // Feeds live at the API root so their URLs stay short enough to paste into
 // Search Console and the ad platforms.
 router.use('/', feedRoutes);

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { trackEvent, toItem } from '../utils/tracking.js';
+import { priceInfo } from '../utils/format.js';
 
 const CartContext = createContext(null);
 const STORAGE_KEY = 'auracraft_cart';
@@ -33,8 +34,9 @@ export const CartProvider = ({ children }) => {
   const lineKey = (id, variant) => `${id}::${variant || ''}`;
 
   const add = useCallback((product, quantity = 1, variant = null) => {
+    const price = priceInfo(product);
     trackEvent('add_to_cart', {
-      value: Number(product.price) * quantity,
+      value: price.final * quantity,
       items: [toItem(product, quantity)],
       id: product.id,
       name: product.name,
@@ -54,7 +56,9 @@ export const CartProvider = ({ children }) => {
           id: product.id,
           name: product.name,
           slug: product.slug,
-          price: Number(product.price),
+          // The discounted price is a display copy; the server prices the order itself.
+          price: price.final,
+          original_price: price.hasDiscount ? price.original : null,
           image: product.image || product.images?.[0]?.url || null,
           stock: product.stock ?? 99,
           variant,

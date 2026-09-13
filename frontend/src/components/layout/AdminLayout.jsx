@@ -5,18 +5,21 @@ import { Loader } from '../ui/index.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import { useTheme } from '../../hooks/useTheme.js';
 import BackToTop from '../ui/BackToTop.jsx';
+import BrandLogo from '../ui/BrandLogo.jsx';
 import {
   IconLogout, IconMenu, IconClose, IconSun, IconMoon, IconDashboard, IconGem, IconFolder, IconTag,
-  IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore, IconShield, IconTrendUp,
+  IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore, IconShield, IconTrendUp, IconBox, IconTruck,
 } from '../ui/Icons.jsx';
 
 const LINKS = [
   { to: '/admin', label: 'Dashboard', Icon: IconDashboard, end: true, group: 'Overview' },
   { to: '/admin/products', label: 'Products', Icon: IconGem, group: 'Catalog' },
   { to: '/admin/categories', label: 'Categories', Icon: IconFolder },
+  { to: '/admin/media', label: 'Media', Icon: IconBox },
   { to: '/admin/orders', label: 'Orders', Icon: IconReceipt, group: 'Sales' },
   { to: '/admin/customers', label: 'Customers', Icon: IconUsers },
   { to: '/admin/coupons', label: 'Coupons', Icon: IconTag },
+  { to: '/admin/delivery', label: 'Delivery Zones', Icon: IconTruck },
   { to: '/admin/fraud', label: 'Fraud Prevention', Icon: IconShield, group: 'Protection' },
   { to: '/admin/marketing', label: 'SEO & Marketing', Icon: IconTrendUp, group: 'Growth' },
   { to: '/admin/team', label: 'Team', Icon: IconUsers, group: 'Site' },
@@ -39,11 +42,7 @@ const AdminLayout = () => {
     <div className="admin">
       <aside className={`admin__side${open ? ' is-open' : ''}`}>
         <Link to="/" className="brand" style={{ padding: '4px 10px 18px' }}>
-          <span className="brand__mark" aria-hidden="true">A</span>
-          <span>
-            <span className="brand__text">AuraCraft</span>
-            <span className="brand__sub">Admin</span>
-          </span>
+          <BrandLogo sub="Admin" size={34} />
         </Link>
 
         {links.map((link) => (

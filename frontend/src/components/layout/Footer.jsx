@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext.jsx';
+import { useI18n } from '../../i18n/index.jsx';
+import BrandLogo from '../ui/BrandLogo.jsx';
 import {
   IconFacebook, IconInstagram, IconYoutube, IconTwitter,
   IconPhone, IconMail, IconPin,
@@ -7,6 +9,7 @@ import {
 
 const Footer = () => {
   const { navCategories, settings } = useStore();
+  const { t, localName } = useI18n();
 
   const socials = [
     { url: settings.facebook_url, Icon: IconFacebook, label: 'Facebook' },
@@ -21,17 +24,11 @@ const Footer = () => {
         <div className="footer__grid">
           <div>
             <Link to="/" className="brand" style={{ marginBottom: 14 }}>
-              <span className="brand__mark" aria-hidden="true">A</span>
-              <span>
-                <span className="brand__text">{settings.site_name}</span>
-                <span className="brand__sub">{settings.site_tagline}</span>
-              </span>
+              <BrandLogo name={settings.site_name || 'Aura Craft'} sub={settings.site_tagline} />
             </Link>
-            <p className="mute-2" style={{ maxWidth: 280 }}>
-              প্রিমিয়াম কোয়ালিটির জুয়েলারি, পারফিউম ও গিফট আইটেম — সারা বাংলাদেশে দ্রুত ডেলিভারি।
-            </p>
+            <p className="mute-2" style={{ maxWidth: 280 }}>{t('footer.about')}</p>
             <a href={`tel:${settings.contact_phone}`} className="btn btn--soft btn--sm" style={{ marginTop: 16 }}>
-              <IconPhone width={15} height={15} /> অর্ডার করতে কল করুন
+              <IconPhone width={15} height={15} /> {t('footer.callToOrder')}
             </a>
 
             {socials.length > 0 && (
@@ -46,31 +43,32 @@ const Footer = () => {
           </div>
 
           <div>
-            <h5>দ্রুত লিংক</h5>
+            <h5>{t('footer.quickLinks')}</h5>
             <ul>
-              <li><Link to="/">হোম</Link></li>
-              <li><Link to="/products">সব প্রোডাক্ট</Link></li>
+              <li><Link to="/">{t('common.home')}</Link></li>
+              <li><Link to="/products">{t('common.allProducts')}</Link></li>
               {navCategories.slice(0, 4).map((c) => (
                 <li key={c.id}>
-                  <Link to={`/category/${c.slug}`}>{c.name_bn || c.name}</Link>
+                  <Link to={`/category/${c.slug}`}>{localName(c)}</Link>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h5>সহায়তা</h5>
+            <h5>{t('footer.support')}</h5>
             <ul>
-              <li><Link to="/track">অর্ডার ট্র্যাকিং</Link></li>
-              <li><Link to="/team">আমাদের টিম</Link></li>
-              <li><Link to="/upcoming">আপকামিং কালেকশন</Link></li>
-              <li><Link to="/cart">কার্ট</Link></li>
-              <li><Link to="/wishlist">পছন্দের তালিকা</Link></li>
+              <li><Link to="/track">{t('footer.orderTracking')}</Link></li>
+              <li><Link to="/team">{t('footer.ourTeam')}</Link></li>
+              <li><Link to="/upcoming">{t('footer.upcomingCollection')}</Link></li>
+              <li><Link to="/cart">{t('common.cart')}</Link></li>
+              <li><Link to="/wishlist">{t('common.wishlist')}</Link></li>
+              <li><Link to="/brand">{t('footer.brand')}</Link></li>
             </ul>
           </div>
 
           <div>
-            <h5>যোগাযোগ</h5>
+            <h5>{t('footer.contact')}</h5>
             <ul>
               <li>
                 <a href={`tel:${settings.contact_phone}`} className="contact-line">
@@ -92,8 +90,8 @@ const Footer = () => {
         </div>
 
         <div className="footer__bottom">
-          <span>© {new Date().getFullYear()} {settings.site_name}. All rights reserved.</span>
-          <span>ঢাকা, বাংলাদেশ থেকে পরিচালিত</span>
+          <span>© {new Date().getFullYear()} {settings.site_name}. {t('footer.rights')}</span>
+          <span>{t('footer.operatedFrom')}</span>
         </div>
       </div>
     </footer>

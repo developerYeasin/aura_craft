@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { teamApi } from '../api/index.js';
+import { useI18n } from '../i18n/index.jsx';
 import { Loader, ErrorBox, Empty, Reveal, SectionHead } from '../components/ui/index.jsx';
 import { IconFacebook, IconInstagram, IconTwitter, IconYoutube, IconUsers } from '../components/ui/Icons.jsx';
 
@@ -11,6 +12,7 @@ const SOCIALS = [
 ];
 
 const Team = () => {
+  const { t } = useI18n();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -32,13 +34,13 @@ const Team = () => {
       <SectionHead
         center
         eyebrow="Our People"
-        title={<>আমাদের <span className="grad-text">টিম</span></>}
-        text="সৃজনশীল, একনিষ্ঠ, আপনার পাশে"
+        title={<>{t('team.title')} <span className="grad-text">{t('team.accent')}</span></>}
+        text={t('team.text')}
       />
 
-      {loading && <Loader />}
+      {loading && <Loader label={t('common.loading')} />}
       {error && !loading && <ErrorBox message={error} onRetry={load} />}
-      {!loading && !error && members.length === 0 && <Empty icon={IconUsers} title="এখনো কোনো মেম্বার যোগ করা হয়নি" />}
+      {!loading && !error && members.length === 0 && <Empty icon={IconUsers} title={t('team.empty')} />}
 
       {!loading && !error && members.length > 0 && (
         <div className="team-grid">

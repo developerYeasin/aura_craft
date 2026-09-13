@@ -1,31 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { productApi, categoryApi } from '../api/index.js';
+import { useI18n } from '../i18n/index.jsx';
 import ProductCard from '../components/product/ProductCard.jsx';
 import { Empty, ErrorBox, Pagination, SkeletonGrid, SectionHead } from '../components/ui/index.jsx';
-import { IconSearch, IconFilter, categoryIcon } from '../components/ui/Icons.jsx';
+import { IconSearch, IconFilter } from '../components/ui/Icons.jsx';
 import { money, toBn } from '../utils/format.js';
 
 const SORTS = [
-  { value: 'newest', label: 'সর্বনতুন' },
-  { value: 'price_asc', label: 'দাম: কম → বেশি' },
-  { value: 'price_desc', label: 'দাম: বেশি → কম' },
-  { value: 'rating', label: 'সর্বোচ্চ রেটিং' },
-  { value: 'name_asc', label: 'নাম (A→Z)' },
-  { value: 'featured', label: 'ফিচার্ড' },
+  ['newest', 'catalog.sortNewest'],
+  ['price_asc', 'catalog.sortPriceAsc'],
+  ['price_desc', 'catalog.sortPriceDesc'],
+  ['rating', 'catalog.sortRating'],
+  ['name_asc', 'catalog.sortName'],
+  ['featured', 'catalog.sortFeatured'],
 ];
 
 const PRICE_BUCKETS = [
-  { label: '৳ ০ – ১,০০০', min: 0, max: 1000 },
-  { label: '৳ ১,০০০ – ২,০০০', min: 1000, max: 2000 },
-  { label: '৳ ২,০০০ – ৫,০০০', min: 2000, max: 5000 },
-  { label: '৳ ৫,০০০+', min: 5000, max: undefined },
+  { min: 0, max: 1000 },
+  { min: 1000, max: 2000 },
+  { min: 2000, max: 5000 },
+  { min: 5000, max: undefined },
 ];
 
 /** Shared listing page: /products (all) and /category/:slug (single category). */
 const CatalogPage = ({ mode = 'all' }) => {
   const { slug } = useParams();
   const [params, setParams] = useSearchParams();
+  const { t, localName } = useI18n();
 
   const [category, setCategory] = useState(null);
   const [data, setData] = useState({ items: [], meta: { page: 1, totalPages: 1, total: 0 } });
@@ -98,24 +100,26 @@ const CatalogPage = ({ mode = 'all' }) => {
     String(bucket.min) === (params.get('minPrice') || '') &&
     String(bucket.max ?? '') === (params.get('maxPrice') || '');
 
+  const bucketLabel = (b) => (b.max ? `${money(b.min)} – ${money(b.max)}` : `${money(b.min)}+`);
+
   const reset = () => setParams(new URLSearchParams());
 
-  const title = mode === 'category' ? category?.name_bn || category?.name || 'কালেকশন' : 'সব প্রোডাক্ট';
+  const title = mode === 'category' ? (category ? localName(category) : t('catalog.collection')) : t('catalog.allProducts');
   const banner = category?.banner_url || category?.image_url;
 
   const filterPanel = (
     <aside className="card card--pad filters">
       <div className="spread" style={{ marginBottom: 14 }}>
-        <h4 style={{ margin: 0 }}>ফিল্টার</h4>
+        <h4 style={{ margin: 0 }}>{t('catalog.filters')}</h4>
         <button type="button" className="btn btn--xs btn--ghost" onClick={reset}>
-          রিসেট
+          {t('catalog.reset')}
         </button>
       </div>
 
       <div className="filters__group">
-        <h4>দাম</h4>
+        <h4>{t('catalog.price')}</h4>
         {PRICE_BUCKETS.map((b) => (
-          <label className="checkbox" key={b.label}>
+          <label className="checkbox" key={b.min}>
             <input
               type="checkbox"
               checked={priceActive(b)}
@@ -126,14 +130,14 @@ const CatalogPage = ({ mode = 'all' }) => {
                 })
               }
             />
-            {b.label}
+            {bucketLabel(b)}
           </label>
         ))}
       </div>
 
       {facets.materials?.length > 0 && (
         <div className="filters__group">
-          <h4>ম্যাটেরিয়াল</h4>
+          <h4>{t('catalog.material')}</h4>
           {facets.materials.map((m) => (
             <label className="checkbox" key={m.value}>
               <input
@@ -149,7 +153,7 @@ const CatalogPage = ({ mode = 'all' }) => {
 
       {facets.colors?.length > 0 && (
         <div className="filters__group">
-          <h4>রঙ</h4>
+          <h4>{t('catalog.color')}</h4>
           {facets.colors.map((c) => (
             <label className="radio" key={c.value}>
               <input
@@ -165,20 +169,20 @@ const CatalogPage = ({ mode = 'all' }) => {
       )}
 
       <div className="filters__group">
-        <h4>স্টক</h4>
+        <h4>{t('catalog.stock')}</h4>
         <label className="checkbox">
           <input
             type="checkbox"
             checked={params.get('inStock') === 'true'}
             onChange={(e) => patch({ inStock: e.target.checked ? 'true' : undefined })}
           />
-          শুধু স্টকে আছে
+          {t('catalog.inStockOnly')}
         </label>
       </div>
 
       {facets.priceRange?.min_price != null && (
         <p className="mute-2" style={{ margin: 0 }}>
-          দামের রেঞ্জ: {money(facets.priceRange.min_price)} – {money(facets.priceRange.max_price)}
+          {t('catalog.priceRange', { min: money(facets.priceRange.min_price), max: money(facets.priceRange.max_price) })}
         </p>
       )}
     </aside>
@@ -193,23 +197,23 @@ const CatalogPage = ({ mode = 'all' }) => {
           <div className="page-banner__content">
             <span className="eyebrow eyebrow--both">Collection</span>
             <h1 className="display t-h1">
-              {title} <span className="grad-text">কালেকশন</span>
+              {title} <span className="grad-text">{t('catalog.collection')}</span>
             </h1>
             <p className="muted" style={{ margin: 0 }}>{category?.description}</p>
             <span className="badge badge--solid" style={{ marginTop: 6 }}>
-              {toBn(data.meta?.total || 0)} টি প্রোডাক্ট
+              {t('home.nProducts', { n: toBn(data.meta?.total || 0) })}
             </span>
           </div>
         </div>
       ) : (
         <div style={{ paddingTop: 40 }}>
-          <SectionHead center eyebrow="Catalog" title={title} text="আপনার পছন্দের প্রোডাক্ট খুঁজে নিন" />
+          <SectionHead center eyebrow="Catalog" title={title} text={t('catalog.subtitle')} />
         </div>
       )}
 
       <nav className="crumbs">
-        <Link to="/">হোম</Link> <span>›</span>
-        {mode === 'category' ? <span>{title}</span> : <span>সব প্রোডাক্ট</span>}
+        <Link to="/">{t('common.home')}</Link> <span>›</span>
+        <span>{title}</span>
       </nav>
 
       <div className="cat-layout">
@@ -227,18 +231,18 @@ const CatalogPage = ({ mode = 'all' }) => {
               <IconSearch width={16} height={16} />
               <input
                 className="input"
-                placeholder="সার্চ করুন…"
+                placeholder={t('catalog.searchPh')}
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
               />
             </form>
             <button type="button" className="btn btn--sm mobile-filter-btn" onClick={() => setShowFilters((v) => !v)}>
-              <IconFilter width={15} height={15} /> ফিল্টার
+              <IconFilter width={15} height={15} /> {t('catalog.filters')}
             </button>
             <select className="select" style={{ width: 'auto' }} value={query.sort} onChange={(e) => patch({ sort: e.target.value })}>
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
+              {SORTS.map(([value, key]) => (
+                <option key={value} value={value}>
+                  {t(key)}
                 </option>
               ))}
             </select>
@@ -246,7 +250,7 @@ const CatalogPage = ({ mode = 'all' }) => {
 
           {!loading && !error && (
             <p className="mute-2" style={{ marginBottom: 12 }}>
-              মোট {toBn(data.meta?.total || 0)} টি প্রোডাক্ট পাওয়া গেছে
+              {t('catalog.found', { n: toBn(data.meta?.total || 0) })}
             </p>
           )}
 
@@ -254,11 +258,11 @@ const CatalogPage = ({ mode = 'all' }) => {
           {error && !loading && <ErrorBox message={error} onRetry={() => patch({})} />}
           {!loading && !error && data.items.length === 0 && (
             <Empty
-              title="কোনো প্রোডাক্ট মেলেনি"
-              text="ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।"
+              title={t('catalog.noMatch')}
+              text={t('catalog.noMatchText')}
               action={
                 <button type="button" className="btn btn--soft btn--sm" style={{ marginTop: 14 }} onClick={reset}>
-                  ফিল্টার রিসেট
+                  {t('catalog.resetFilters')}
                 </button>
               }
             />

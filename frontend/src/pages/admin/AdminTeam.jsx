@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Empty } from '../../components/ui/index.jsx';
 import { IconEdit, IconTrash, IconPlus, IconUsers } from '../../components/ui/Icons.jsx';
+import ClearAllButton from '../../components/ui/ClearAll.jsx';
 
 const emptyForm = {
   name: '',
@@ -96,9 +97,12 @@ const AdminTeam = () => {
           <h1 className="display t-h2">Team</h1>
           <p className="mute-2" style={{ margin: 0 }}>টিম পেজে যাঁদের দেখানো হবে</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={openCreate}>
-          <IconPlus width={15} height={15} /> নতুন মেম্বার
-        </button>
+        <div className="admin__actions">
+          <ClearAllButton section="team" label="Team" onCleared={load} />
+          <button type="button" className="btn btn--primary btn--sm" onClick={openCreate}>
+            <IconPlus width={15} height={15} /> নতুন মেম্বার
+          </button>
+        </div>
       </div>
 
       {loading && <Loader />}

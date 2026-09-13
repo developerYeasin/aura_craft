@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Pagination, Empty } from '../../components/ui/index.jsx';
 import OrderSummaryCard from '../../components/product/OrderSummaryCard.jsx';
+import ClearAllButton from '../../components/ui/ClearAll.jsx';
 import { IconEye, IconTrash, IconSearch, IconReceipt, IconTruck, IconShield } from '../../components/ui/Icons.jsx';
 import { enMoney, enNum, enPercent, formatDateTime, ORDER_STATUS } from '../../utils/format.js';
 
@@ -176,6 +177,13 @@ const AdminOrders = () => {
           <h1 className="display t-h2">Orders</h1>
           <p className="mute-2" style={{ margin: 0 }}>মোট {enNum(data.meta?.total || 0)} টি অর্ডার</p>
         </div>
+        <ClearAllButton
+          section="orders"
+          label="Orders"
+          sensitive
+          warning="সব অর্ডারের আইটেমও মুছে যাবে, এবং কাস্টমার তালিকা ও ড্যাশবোর্ডের বিক্রির হিসাব খালি দেখাবে।"
+          onCleared={() => (page === 1 ? load() : setPage(1))}
+        />
       </div>
 
       <div className="toolbar">

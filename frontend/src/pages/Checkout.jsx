@@ -1,21 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { trackEvent } from '../utils/tracking.js';
-import { couponApi } from '../api/index.js';
-import { getDeviceId } from '../utils/device.js';
 import { Link, useNavigate } from 'react-router-dom';
-import { orderApi } from '../api/index.js';
+import { trackEvent } from '../utils/tracking.js';
+import { couponApi, deliveryApi, orderApi } from '../api/index.js';
+import { getDeviceId } from '../utils/device.js';
 import { useCart } from '../context/CartContext.jsx';
 import { useStore } from '../context/StoreContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { Empty, Field, SectionHead } from '../components/ui/index.jsx';
+import { useI18n } from '../i18n/index.jsx';
+import { Empty, Field } from '../components/ui/index.jsx';
 import { money, toBn, PLACEHOLDER_IMAGE } from '../utils/format.js';
-import { IconReceipt } from '../components/ui/Icons.jsx';
+import { IconReceipt, IconTruck, IconCheck } from '../components/ui/Icons.jsx';
 
-const PAYMENTS = [
-  { value: 'cod', label: 'ক্যাশ অন ডেলিভারি' },
-  { value: 'bkash', label: 'বিকাশ' },
-  { value: 'nagad', label: 'নগদ' },
-];
+const PAYMENTS = ['cod', 'bkash', 'nagad'];
 
 const initialForm = {
   customer_name: '',
@@ -23,6 +19,7 @@ const initialForm = {
   customer_email: '',
   address: '',
   city: '',
+  delivery_zone_id: '',
   delivery_area: 'inside_dhaka',
   payment_method: 'cod',
   note: '',
@@ -33,6 +30,7 @@ const Checkout = () => {
   const { settings } = useStore();
   const toast = useToast();
   const navigate = useNavigate();
+  const { t, lang, localName } = useI18n();
 
   const [form, setForm] = useState({ ...initialForm, website: '' });
   const [errors, setErrors] = useState({});
@@ -41,6 +39,14 @@ const Checkout = () => {
   const [coupon, setCoupon] = useState(null);
   const [couponBusy, setCouponBusy] = useState(false);
   const [couponError, setCouponError] = useState(null);
+  const [zones, setZones] = useState([]);
+
+  useEffect(() => {
+    deliveryApi
+      .list()
+      .then((res) => setZones(res.data || []))
+      .catch(() => setZones([]));
+  }, []);
 
   const fired = useRef(false);
   useEffect(() => {
@@ -52,11 +58,33 @@ const Checkout = () => {
     });
   }, [items, subtotal]);
 
-  const insideCharge = Number(settings.delivery_charge_inside || 60);
-  const outsideCharge = Number(settings.delivery_charge_outside || 120);
-  const delivery = form.delivery_area === 'outside_dhaka' ? outsideCharge : insideCharge;
+  // With zones configured the area decides the charge. With none (an older API,
+  // or every zone removed) checkout falls back to the flat inside/outside rates.
+  const useZones = zones.length > 0;
+  const zone = zones.find((z) => String(z.id) === String(form.delivery_zone_id)) || null;
+  const legacyCharge = Number(
+    form.delivery_area === 'outside_dhaka' ? settings.delivery_charge_outside || 120 : settings.delivery_charge_inside || 60
+  );
+  const delivery = useZones ? (zone ? Number(zone.charge) : null) : legacyCharge;
+
   const discount = coupon?.discount || 0;
-  const total = subtotal - discount + delivery;
+  const productSavings = items.reduce(
+    (sum, i) => sum + (i.original_price ? (i.original_price - i.price) * i.quantity : 0),
+    0
+  );
+  const total = subtotal - discount + (delivery || 0);
+
+  const groups = [
+    { key: 'free', label: t('checkout.groupFree'), zones: zones.filter((z) => Number(z.charge) === 0) },
+    { key: 'dhaka', label: t('checkout.groupDhaka'), zones: zones.filter((z) => Number(z.charge) > 0 && z.region === 'inside_dhaka') },
+    { key: 'outside', label: t('checkout.groupOutside'), zones: zones.filter((z) => Number(z.charge) > 0 && z.region === 'outside_dhaka') },
+  ].filter((g) => g.zones.length);
+
+  const zoneLabel = (z) => {
+    const note = lang === 'bn' && z.note ? ` (${z.note})` : '';
+    const price = Number(z.charge) === 0 ? t('common.freeDelivery') : money(z.charge);
+    return `${localName(z)}${note} — ${price}`;
+  };
 
   /** Preview only — the server re-checks the code and decides the real price. */
   const applyCoupon = async (e) => {
@@ -68,7 +96,7 @@ const Checkout = () => {
     try {
       const res = await couponApi.validate({ code, subtotal, phone: form.customer_phone || undefined });
       setCoupon(res.data);
-      toast.success(`কুপন প্রয়োগ হয়েছে — ${money(res.data.discount)} ছাড়`);
+      toast.success(t('checkout.couponApplied', { amount: money(res.data.discount) }));
     } catch (err) {
       setCoupon(null);
       setCouponError(err.message);
@@ -84,16 +112,18 @@ const Checkout = () => {
   };
 
   const set = (key) => (e) => {
-    setForm((f) => ({ ...f, [key]: e.target.value }));
+    const value = e.target.value;
+    setForm((f) => ({ ...f, [key]: value }));
     setErrors((err) => ({ ...err, [key]: undefined }));
   };
 
   const validate = () => {
     const next = {};
-    if (form.customer_name.trim().length < 2) next.customer_name = 'নাম লিখুন';
-    if (!/^[\d+\-\s]{6,}$/.test(form.customer_phone.trim())) next.customer_phone = 'সঠিক মোবাইল নম্বর দিন';
-    if (form.address.trim().length < 5) next.address = 'সম্পূর্ণ ঠিকানা লিখুন';
-    if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) next.customer_email = 'সঠিক ইমেইল দিন';
+    if (form.customer_name.trim().length < 2) next.customer_name = t('checkout.errName');
+    if (!/^[\d+\-\s]{6,}$/.test(form.customer_phone.trim())) next.customer_phone = t('checkout.errPhone');
+    if (form.address.trim().length < 5) next.address = t('checkout.errAddress');
+    if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) next.customer_email = t('checkout.errEmail');
+    if (useZones && !zone) next.delivery_zone_id = t('checkout.errArea');
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -103,8 +133,10 @@ const Checkout = () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
+      const { delivery_zone_id, ...rest } = form;
       const payload = {
-        ...form,
+        ...rest,
+        ...(zone ? { delivery_zone_id: zone.id, delivery_area: zone.region } : {}),
         customer_email: form.customer_email || undefined,
         items: items.map((i) => ({ product_id: i.id, quantity: i.quantity, variant: i.variant })),
         coupon_code: coupon?.code || undefined,
@@ -113,7 +145,7 @@ const Checkout = () => {
       };
       const res = await orderApi.place(payload);
       clear();
-      toast.success('অর্ডার সফলভাবে সম্পন্ন হয়েছে!');
+      toast.success(t('checkout.success'));
       navigate(`/order-success/${res.data.order_code}`, { state: { order: res.data } });
     } catch (err) {
       toast.error(err.message);
@@ -130,11 +162,11 @@ const Checkout = () => {
       <div className="container section">
         <Empty
           icon={IconReceipt}
-          title="চেকআউট করার মতো কিছু নেই"
-          text="আগে কার্টে প্রোডাক্ট যোগ করুন।"
+          title={t('checkout.nothing')}
+          text={t('checkout.nothingText')}
           action={
             <Link to="/products" className="btn btn--primary btn--sm" style={{ marginTop: 14 }}>
-              প্রোডাক্ট দেখুন
+              {t('checkout.viewProducts')}
             </Link>
           }
         />
@@ -145,11 +177,11 @@ const Checkout = () => {
   return (
     <div className="container section--tight">
       <div className="steps">
-        <span className="steps__item is-done"><span className="steps__num">১</span> কার্ট</span>
+        <span className="steps__item is-done"><span className="steps__num">{toBn(1)}</span> {t('checkout.stepCart')}</span>
         <span className="steps__bar" />
-        <span className="steps__item is-done"><span className="steps__num">২</span> তথ্য দিন</span>
+        <span className="steps__item is-done"><span className="steps__num">{toBn(2)}</span> {t('checkout.stepInfo')}</span>
         <span className="steps__bar" />
-        <span className="steps__item"><span className="steps__num">৩</span> সম্পন্ন</span>
+        <span className="steps__item"><span className="steps__num">{toBn(3)}</span> {t('checkout.stepDone')}</span>
       </div>
 
       <form className="checkout-grid" onSubmit={submit} noValidate>
@@ -165,59 +197,79 @@ const Checkout = () => {
           onChange={set('website')}
         />
         <div className="card card--pad">
-          <h3 style={{ marginBottom: 16 }}>অর্ডার ফর্ম</h3>
+          <h3 style={{ marginBottom: 16 }}>{t('checkout.formTitle')}</h3>
 
           <div className="form-grid">
-            <Field label="নাম" required error={errors.customer_name}>
-              <input className="input" placeholder="আপনার নাম" value={form.customer_name} onChange={set('customer_name')} />
+            <Field label={t('checkout.name')} required error={errors.customer_name}>
+              <input className="input" placeholder={t('checkout.namePh')} autoComplete="name" value={form.customer_name} onChange={set('customer_name')} />
             </Field>
-            <Field label="মোবাইল নম্বর" required error={errors.customer_phone}>
-              <input className="input" placeholder="01XXXXXXXXX" value={form.customer_phone} onChange={set('customer_phone')} />
+            <Field label={t('checkout.phone')} required error={errors.customer_phone}>
+              <input className="input" placeholder="01XXXXXXXXX" inputMode="tel" autoComplete="tel" value={form.customer_phone} onChange={set('customer_phone')} />
             </Field>
           </div>
 
-          <Field label="ইমেইল (ঐচ্ছিক)" error={errors.customer_email}>
-            <input className="input" placeholder="you@example.com" value={form.customer_email} onChange={set('customer_email')} />
+          <Field label={t('checkout.email')} error={errors.customer_email}>
+            <input className="input" placeholder="you@example.com" type="email" autoComplete="email" value={form.customer_email} onChange={set('customer_email')} />
           </Field>
 
-          <Field label="ঠিকানা" required error={errors.address}>
-            <textarea className="textarea" placeholder="বাসা/রোড/এলাকা সহ সম্পূর্ণ ঠিকানা" value={form.address} onChange={set('address')} />
+          <Field label={t('checkout.area')} required error={errors.delivery_zone_id}>
+            {useZones ? (
+              <select className="select" value={form.delivery_zone_id} onChange={set('delivery_zone_id')}>
+                <option value="">{t('checkout.areaPh')}</option>
+                {groups.map((g) => (
+                  <optgroup key={g.key} label={g.label}>
+                    {g.zones.map((z) => (
+                      <option key={z.id} value={z.id}>{zoneLabel(z)}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            ) : (
+              <select className="select" value={form.delivery_area} onChange={set('delivery_area')}>
+                <option value="inside_dhaka">{t('checkout.insideDhaka')} ({money(settings.delivery_charge_inside || 60)})</option>
+                <option value="outside_dhaka">{t('checkout.outsideDhaka')} ({money(settings.delivery_charge_outside || 120)})</option>
+              </select>
+            )}
+          </Field>
+          {delivery != null && (
+            <div className={`delivery-hint ${delivery === 0 ? 'delivery-hint--free' : 'delivery-hint--paid'}`} role="status" key={`${form.delivery_zone_id}-${form.delivery_area}`}>
+              {delivery === 0 ? <IconCheck width={16} height={16} /> : <IconTruck width={16} height={16} />}
+              <span>{delivery === 0 ? t('checkout.freeHere') : t('checkout.chargeHere', { amount: money(delivery) })}</span>
+            </div>
+          )}
+
+          <Field label={t('checkout.address')} required error={errors.address}>
+            <textarea className="textarea" placeholder={t('checkout.addressPh')} autoComplete="street-address" value={form.address} onChange={set('address')} />
           </Field>
 
           <div className="form-grid">
-            <Field label="শহর / জেলা">
-              <input className="input" placeholder="ঢাকা" value={form.city} onChange={set('city')} />
+            <Field label={t('checkout.city')}>
+              <input className="input" placeholder={t('checkout.cityPh')} value={form.city} onChange={set('city')} />
             </Field>
-            <Field label="ডেলিভারি এলাকা" required>
-              <select className="select" value={form.delivery_area} onChange={set('delivery_area')}>
-                <option value="inside_dhaka">ঢাকার ভেতরে ({money(insideCharge)})</option>
-                <option value="outside_dhaka">ঢাকার বাইরে ({money(outsideCharge)})</option>
+            <Field label={t('checkout.payment')} required>
+              <select className="select" value={form.payment_method} onChange={set('payment_method')}>
+                {PAYMENTS.map((p) => (
+                  <option key={p} value={p}>{t(`checkout.${p}`)}</option>
+                ))}
               </select>
             </Field>
           </div>
 
-          <Field label="পেমেন্ট মেথড" required>
-            <select className="select" value={form.payment_method} onChange={set('payment_method')}>
-              {PAYMENTS.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="অতিরিক্ত নোট (ঐচ্ছিক)">
-            <textarea className="textarea" placeholder="বিশেষ কোনো নির্দেশনা থাকলে লিখুন" value={form.note} onChange={set('note')} />
+          <Field label={t('checkout.note')}>
+            <textarea className="textarea" placeholder={t('checkout.notePh')} value={form.note} onChange={set('note')} />
           </Field>
         </div>
 
         <div className="card card--pad summary">
-          <h3 style={{ marginBottom: 12 }}>আপনার অর্ডার</h3>
+          <h3 style={{ marginBottom: 12 }}>{t('checkout.yourOrder')}</h3>
           {items.map((item) => (
             <div className="cart-line" key={`${item.id}-${item.variant || ''}`} style={{ gridTemplateColumns: '48px 1fr auto' }}>
               <img src={item.image || PLACEHOLDER_IMAGE} alt={item.name} style={{ width: 48, height: 48 }} />
               <div>
                 <div className="cart-line__name" style={{ fontSize: 13 }}>{item.name}</div>
                 <span className="mute-2">
-                  {toBn(item.quantity)} × {money(item.price)}
+                  {toBn(item.quantity)} × {item.original_price ? <s style={{ marginRight: 4 }}>{money(item.original_price)}</s> : null}
+                  {money(item.price)}
                   {item.variant ? ` · ${item.variant}` : ''}
                 </span>
               </div>
@@ -230,20 +282,20 @@ const Checkout = () => {
               <div className="spread">
                 <span className="badge badge--ok num">{coupon.code}</span>
                 <button type="button" className="btn btn--xs btn--ghost" onClick={clearCoupon}>
-                  সরান
+                  {t('common.remove')}
                 </button>
               </div>
             ) : (
               <div className="row gap-8">
                 <input
                   className="input"
-                  placeholder="কুপন কোড"
+                  placeholder={t('checkout.couponPh')}
                   value={couponDraft}
                   onChange={(e) => setCouponDraft(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && applyCoupon(e)}
                 />
                 <button type="button" className="btn btn--sm" onClick={applyCoupon} disabled={couponBusy || !couponDraft.trim()}>
-                  {couponBusy ? '…' : 'প্রয়োগ'}
+                  {couponBusy ? '…' : t('checkout.apply')}
                 </button>
               </div>
             )}
@@ -251,29 +303,37 @@ const Checkout = () => {
           </div>
 
           <div className="summary__row" style={{ marginTop: 10 }}>
-            <span>সাবটোটাল</span>
+            <span>{t('common.subtotal')}</span>
             <span>{money(subtotal)}</span>
           </div>
-          <div className="summary__row">
-            <span>ডেলিভারি চার্জ</span>
-            <span>{money(delivery)}</span>
+          {productSavings > 0 && (
+            <div className="summary__row summary__row--save">
+              <span>{t('checkout.productSavings')}</span>
+              <span>{t('product.youSave', { amount: money(productSavings) })}</span>
+            </div>
+          )}
+          <div className={`summary__row${delivery === 0 ? ' summary__row--free' : ''}`}>
+            <span>{t('common.deliveryCharge')}{zone ? ` · ${localName(zone)}` : ''}</span>
+            <span>
+              {delivery == null ? <span className="mute-2">{t('checkout.selectArea')}</span> : delivery === 0 ? t('common.freeDelivery') : money(delivery)}
+            </span>
           </div>
           {discount > 0 && (
-            <div className="summary__row">
-              <span>ছাড় ({coupon.code})</span>
+            <div className="summary__row summary__row--save">
+              <span>{t('checkout.couponDiscount', { code: coupon.code })}</span>
               <span>− {money(discount)}</span>
             </div>
           )}
           <div className="summary__row summary__row--total">
-            <span>সর্বমোট</span>
+            <span>{t('common.total')}</span>
             <span>{money(total)}</span>
           </div>
 
           <button type="submit" className="btn btn--primary btn--block" style={{ marginTop: 14 }} disabled={submitting}>
-            {submitting ? 'পাঠানো হচ্ছে…' : 'অর্ডার নিশ্চিত করুন'}
+            {submitting ? t('checkout.sending') : t('checkout.confirm')}
           </button>
           <p className="mute-2" style={{ marginTop: 10, marginBottom: 0 }}>
-            অর্ডার নিশ্চিত করলে আমাদের টিম কল করে কনফার্ম করবে।
+            {t('checkout.confirmNote')}
           </p>
         </div>
       </form>

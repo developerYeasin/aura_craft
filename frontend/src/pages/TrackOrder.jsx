@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { orderApi } from '../api/index.js';
+import { useI18n } from '../i18n/index.jsx';
 import OrderSummaryCard from '../components/product/OrderSummaryCard.jsx';
 import { Empty, Field, SectionHead } from '../components/ui/index.jsx';
-import { ORDER_STATUS } from '../utils/format.js';
+import { ORDER_STATUS, toBn } from '../utils/format.js';
 import { IconSearch } from '../components/ui/Icons.jsx';
 
 const FLOW = ['pending', 'processing', 'shipped', 'delivered'];
 
 const TrackOrder = () => {
+  const { t, lang } = useI18n();
   const [params, setParams] = useSearchParams();
   const [code, setCode] = useState(params.get('code') || '');
   const [order, setOrder] = useState(null);
@@ -41,7 +43,7 @@ const TrackOrder = () => {
 
   return (
     <div className="container section--tight">
-      <SectionHead center eyebrow="Track" title="অর্ডার ট্র্যাকিং" text="অর্ডার কোড দিয়ে আপনার অর্ডারের সর্বশেষ অবস্থা দেখুন" />
+      <SectionHead center eyebrow="Track" title={t('track.title')} text={t('track.text')} />
 
       <div className="card card--pad" style={{ maxWidth: 560, margin: '0 auto 24px' }}>
         <form
@@ -51,16 +53,16 @@ const TrackOrder = () => {
             search();
           }}
         >
-          <Field label="অর্ডার কোড" required>
+          <Field label={t('track.code')} required>
             <input className="input" placeholder="AC-XXXXXXXX" value={code} onChange={(e) => setCode(e.target.value)} />
           </Field>
           <button type="submit" className="btn btn--primary btn--block" disabled={loading}>
-            {loading ? 'খোঁজা হচ্ছে…' : 'ট্র্যাক করুন'}
+            {loading ? t('track.searching') : t('track.submit')}
           </button>
         </form>
       </div>
 
-      {error && <Empty icon={IconSearch} title="অর্ডার পাওয়া যায়নি" text={error} />}
+      {error && <Empty icon={IconSearch} title={t('track.notFound')} text={error} />}
 
       {order && (
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -70,8 +72,8 @@ const TrackOrder = () => {
                 <span key={s} style={{ display: 'contents' }}>
                   {i > 0 && <span className="steps__bar" />}
                   <span className={`steps__item${i <= stageIndex ? ' is-done' : ''}`}>
-                    <span className="steps__num">{i <= stageIndex ? '✓' : i + 1}</span>
-                    {ORDER_STATUS[s].bn}
+                    <span className="steps__num">{i <= stageIndex ? '✓' : toBn(i + 1)}</span>
+                    {lang === 'bn' ? ORDER_STATUS[s].bn : ORDER_STATUS[s].label}
                   </span>
                 </span>
               ))}

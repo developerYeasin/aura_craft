@@ -7,7 +7,20 @@ import { env } from '../config/env.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fresh = process.argv.includes('--fresh');
 
-const DROP_ORDER = ['notifications', 'push_subscriptions', 'order_items', 'orders', 'product_images', 'products', 'categories', 'team_members', 'settings', 'users'];
+const DROP_ORDER = ['delivery_zones', 'notifications', 'push_subscriptions', 'order_items', 'orders', 'product_images', 'products', 'categories', 'team_members', 'settings', 'users'];
+
+// Not exported: importing this file runs the migration.
+const DEFAULT_ZONES = [
+  { name: 'Dhanmondi', name_bn: 'ধানমন্ডি', region: 'inside_dhaka', charge: 0, note: 'যেকোনো এলাকা' },
+  { name: 'New Market', name_bn: 'নিউ মার্কেট', region: 'inside_dhaka', charge: 0, note: null },
+  { name: 'Nilkhet', name_bn: 'নীলক্ষেত', region: 'inside_dhaka', charge: 0, note: null },
+  { name: 'Azimpur', name_bn: 'আজিমপুর', region: 'inside_dhaka', charge: 0, note: null },
+  { name: 'Hazaribagh', name_bn: 'হাজারীবাগ', region: 'inside_dhaka', charge: 0, note: 'যেকোনো এলাকা' },
+  { name: 'Kamrangir Char', name_bn: 'কামরাঙ্গীরচর', region: 'inside_dhaka', charge: 0, note: 'যেকোনো এলাকা' },
+  { name: 'Zigatola', name_bn: 'জিগাতলা', region: 'inside_dhaka', charge: 0, note: 'যেকোনো এলাকা' },
+  { name: 'Other areas of Dhaka', name_bn: 'ঢাকার অন্যান্য এলাকা', region: 'inside_dhaka', charge: 60, note: null },
+  { name: 'Outside Dhaka', name_bn: 'ঢাকার বাইরে', region: 'outside_dhaka', charge: 120, note: null },
+];
 
 const run = async () => {
   const conn = await mysql.createConnection({
@@ -45,6 +58,11 @@ const run = async () => {
     ['orders', 'courier_status', 'VARCHAR(64) NULL AFTER courier_tracking_url'],
     ['orders', 'coupon_code', 'VARCHAR(40) NULL AFTER courier_status'],
     ['orders', 'discount', 'DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER subtotal'],
+    ['orders', 'delivery_zone', 'VARCHAR(140) NULL AFTER delivery_area'],
+    ['order_items', 'original_price', 'DECIMAL(10,2) NULL AFTER unit_price'],
+    ['products', 'video_url', 'VARCHAR(500) NULL AFTER description'],
+    ['products', 'discount_type', "ENUM('none','percent','fixed') NOT NULL DEFAULT 'none' AFTER compare_price"],
+    ['products', 'discount_value', 'DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_type'],
   ];
   for (const [table, column, definition] of ADDED_COLUMNS) {
     const [[{ found }]] = await conn.query(
@@ -56,6 +74,26 @@ const run = async () => {
       await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
       console.log(`• Added ${table}.${column}`);
     }
+  }
+
+  // delivery_area was an ENUM of two values; zones need room to grow.
+  const [[areaCol]] = await conn.query(
+    `SELECT DATA_TYPE AS type FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'delivery_area'`,
+    [env.db.name]
+  );
+  if (areaCol?.type === 'enum') {
+    await conn.query("ALTER TABLE orders MODIFY delivery_area VARCHAR(40) NOT NULL DEFAULT 'inside_dhaka'");
+    console.log('• Widened orders.delivery_area');
+  }
+
+  const [[{ zones }]] = await conn.query('SELECT COUNT(*) AS zones FROM delivery_zones');
+  if (!zones) {
+    await conn.query(
+      'INSERT INTO delivery_zones (name, name_bn, region, charge, note, sort_order) VALUES ?',
+      [DEFAULT_ZONES.map((z, i) => [z.name, z.name_bn, z.region, z.charge, z.note, i + 1])]
+    );
+    console.log(`• Seeded ${DEFAULT_ZONES.length} delivery zones`);
   }
   console.log(`✔ Migration complete on database "${env.db.name}"`);
   await conn.end();

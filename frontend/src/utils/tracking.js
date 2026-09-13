@@ -167,6 +167,6 @@ export const toItem = (product, quantity = 1) => ({
   item_id: String(product?.id ?? ''),
   item_name: product?.name ?? '',
   item_category: product?.category_name || product?.category_name_bn || '',
-  price: Number(product?.price ?? 0),
+  price: Number(product?.final_price ?? product?.price ?? 0),
   quantity,
 });

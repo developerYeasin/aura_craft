@@ -37,8 +37,11 @@ CREATE TABLE IF NOT EXISTS products (
   sku VARCHAR(60) NULL UNIQUE,
   short_description VARCHAR(300) NULL,
   description TEXT NULL,
+  video_url VARCHAR(500) NULL,
   price DECIMAL(10,2) NOT NULL DEFAULT 0,
   compare_price DECIMAL(10,2) NULL,
+  discount_type ENUM('none','percent','fixed') NOT NULL DEFAULT 'none',
+  discount_value DECIMAL(10,2) NOT NULL DEFAULT 0,
   stock INT NOT NULL DEFAULT 0,
   material VARCHAR(120) NULL,
   color VARCHAR(120) NULL,
@@ -75,7 +78,8 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_email VARCHAR(160) NULL,
   address TEXT NOT NULL,
   city VARCHAR(120) NULL,
-  delivery_area ENUM('inside_dhaka','outside_dhaka') NOT NULL DEFAULT 'inside_dhaka',
+  delivery_area VARCHAR(40) NOT NULL DEFAULT 'inside_dhaka',
+  delivery_zone VARCHAR(140) NULL,
   note TEXT NULL,
   payment_method ENUM('cod','bkash','nagad') NOT NULL DEFAULT 'cod',
   subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
@@ -102,12 +106,29 @@ CREATE TABLE IF NOT EXISTS order_items (
   product_name VARCHAR(180) NOT NULL,
   product_image VARCHAR(500) NULL,
   unit_price DECIMAL(10,2) NOT NULL,
+  original_price DECIMAL(10,2) NULL,
   quantity INT NOT NULL DEFAULT 1,
   variant VARCHAR(120) NULL,
   line_total DECIMAL(10,2) NOT NULL,
   CONSTRAINT fk_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   CONSTRAINT fk_items_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
   INDEX idx_items_order (order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Delivery areas the customer picks at checkout. region is what couriers care
+-- about (inside/outside Dhaka); charge 0 means the area ships free.
+CREATE TABLE IF NOT EXISTS delivery_zones (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  name_bn VARCHAR(120) NULL,
+  region ENUM('inside_dhaka','outside_dhaka') NOT NULL DEFAULT 'inside_dhaka',
+  charge DECIMAL(10,2) NOT NULL DEFAULT 0,
+  note VARCHAR(200) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_zones_active (is_active, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS team_members (

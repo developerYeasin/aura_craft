@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Empty } from '../../components/ui/index.jsx';
 import { IconEdit, IconTrash, IconPlus, IconTag } from '../../components/ui/Icons.jsx';
+import ClearAllButton from '../../components/ui/ClearAll.jsx';
 import { enMoney, enNum, formatDate } from '../../utils/format.js';
 
 const blank = {
@@ -133,9 +134,12 @@ const AdminCoupons = () => {
           <h1 className="display t-h2">Coupons</h1>
           <p className="mute-2" style={{ margin: 0 }}>ডিসকাউন্ট কোড তৈরি ও নিয়ন্ত্রণ</p>
         </div>
-        <button type="button" className="btn btn--primary btn--sm" onClick={openNew}>
-          <IconPlus width={14} height={14} /> নতুন কুপন
-        </button>
+        <div className="admin__actions">
+          <ClearAllButton section="coupons" label="Coupons" warning="পুরনো অর্ডারে ব্যবহৃত কুপন কোডের নাম থেকে যাবে।" onCleared={load} />
+          <button type="button" className="btn btn--primary btn--sm" onClick={openNew}>
+            <IconPlus width={14} height={14} /> নতুন কুপন
+          </button>
+        </div>
       </div>
 
       {loading && <Loader />}
