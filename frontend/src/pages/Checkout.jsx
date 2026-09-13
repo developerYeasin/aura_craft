@@ -22,6 +22,8 @@ const initialForm = {
   delivery_zone_id: '',
   delivery_area: 'inside_dhaka',
   payment_method: 'cod',
+  payment_sender: '',
+  payment_trx_id: '',
   note: '',
 };
 
@@ -74,6 +76,20 @@ const Checkout = () => {
   );
   const total = subtotal - discount + (delivery || 0);
 
+  // bKash / Nagad are manual Send Money payments: show the store number, collect sender + TrxID.
+  const prepaid = form.payment_method !== 'cod';
+  const methodName = t(`checkout.${form.payment_method}`);
+  const payNumber = prepaid ? settings[`${form.payment_method}_number`] : '';
+
+  const copyNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(payNumber);
+      toast.success(t('checkout.copied'));
+    } catch {
+      /* clipboard blocked — the number is still visible */
+    }
+  };
+
   const groups = [
     { key: 'free', label: t('checkout.groupFree'), zones: zones.filter((z) => Number(z.charge) === 0) },
     { key: 'dhaka', label: t('checkout.groupDhaka'), zones: zones.filter((z) => Number(z.charge) > 0 && z.region === 'inside_dhaka') },
@@ -124,6 +140,10 @@ const Checkout = () => {
     if (form.address.trim().length < 5) next.address = t('checkout.errAddress');
     if (form.customer_email && !/^\S+@\S+\.\S+$/.test(form.customer_email)) next.customer_email = t('checkout.errEmail');
     if (useZones && !zone) next.delivery_zone_id = t('checkout.errArea');
+    if (prepaid) {
+      if (!/^[\d+\-\s]{6,}$/.test(form.payment_sender.trim())) next.payment_sender = t('checkout.errSender');
+      if (!/^[A-Za-z0-9]{6,40}$/.test(form.payment_trx_id.trim())) next.payment_trx_id = t('checkout.errTrx');
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -133,9 +153,10 @@ const Checkout = () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const { delivery_zone_id, ...rest } = form;
+      const { delivery_zone_id, payment_sender, payment_trx_id, ...rest } = form;
       const payload = {
         ...rest,
+        ...(prepaid ? { payment_sender: payment_sender.trim(), payment_trx_id: payment_trx_id.trim() } : {}),
         ...(zone ? { delivery_zone_id: zone.id, delivery_area: zone.region } : {}),
         customer_email: form.customer_email || undefined,
         items: items.map((i) => ({ product_id: i.id, quantity: i.quantity, variant: i.variant })),
@@ -254,6 +275,39 @@ const Checkout = () => {
               </select>
             </Field>
           </div>
+
+          {prepaid && (
+            <div className="pay-box" key={form.payment_method}>
+              <b>{t('checkout.payTitle', { method: methodName })}</b>
+              {payNumber ? (
+                <>
+                  <p>{t('checkout.payStep1', { method: methodName, amount: money(total) })}</p>
+                  <div className="pay-box__number">
+                    <span className="num">{payNumber}</span>
+                    <button type="button" className="btn btn--xs" onClick={copyNumber}>{t('checkout.copy')}</button>
+                  </div>
+                  <p>{t('checkout.payStep2')}</p>
+                </>
+              ) : (
+                <p>{t('checkout.payNoNumber', { method: methodName })}</p>
+              )}
+              <div className="form-grid">
+                <Field label={t('checkout.sender', { method: methodName })} required error={errors.payment_sender}>
+                  <input className="input" placeholder="01XXXXXXXXX" inputMode="tel" value={form.payment_sender} onChange={set('payment_sender')} />
+                </Field>
+                <Field label={t('checkout.trxId')} required error={errors.payment_trx_id}>
+                  <input
+                    className="input num"
+                    placeholder={t('checkout.trxPh')}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    value={form.payment_trx_id}
+                    onChange={set('payment_trx_id')}
+                  />
+                </Field>
+              </div>
+            </div>
+          )}
 
           <Field label={t('checkout.note')}>
             <textarea className="textarea" placeholder={t('checkout.notePh')} value={form.note} onChange={set('note')} />

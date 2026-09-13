@@ -654,6 +654,15 @@ h1, h2, h3, h4, h5 {
 .drawer__link.is-active { box-shadow: inset 2px 0 0 var(--accent); }
 .drawer__ico { width: 28px; height: 28px; display: grid; place-items: center; color: var(--text-mute); }
 
+.cart-drawer { width: min(400px, 92vw); display: flex; flex-direction: column; padding-bottom: 0; }
+.cart-drawer__head { margin-bottom: 8px; }
+.cart-drawer__list { flex: 1; overflow-y: auto; }
+.cart-drawer__line { grid-template-columns: 64px 1fr; gap: 12px; padding: 12px 0; }
+.cart-drawer__line img { width: 64px; height: 64px; }
+.cart-drawer__foot { margin: 0 -16px; padding: 14px 16px 18px; border-top: 1px solid var(--line); }
+.cart-drawer__empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; color: var(--text-mute); }
+.cart-drawer__empty h4 { color: var(--text); margin: 6px 0 0; }
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -1906,9 +1915,24 @@ table.data tbody tr:hover .table-thumb { transform: scale(1.06); }
 .nav__btn.has-unread { color: var(--accent); }
 
 @media (max-width: 520px) {
-  .notif__panel { position: fixed; top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; }
+  .notif__panel, .notif__panel--portal { position: fixed; top: auto !important; bottom: 12px; left: 12px; right: 12px !important; width: auto; }
   .notif__list { max-height: 50vh; }
 }
+
+/* Rendered into <body> so no glass card's stacking context can cover it. */
+.notif__panel--portal { position: fixed; z-index: 120; }
+
+/* Manual bKash / Nagad payment instructions at checkout */
+.pay-box {
+  margin: 4px 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--accent-wash);
+}
+.pay-box p { margin: 6px 0; font-size: 13.5px; color: var(--text-dim); }
+.pay-box__number { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.pay-box__number .num { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); }
 
 /* Admin top bar holding the burger + notification bell */
 .admin__bar {

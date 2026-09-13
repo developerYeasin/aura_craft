@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_zone VARCHAR(140) NULL,
   note TEXT NULL,
   payment_method ENUM('cod','bkash','nagad') NOT NULL DEFAULT 'cod',
+  payment_sender VARCHAR(40) NULL,
+  payment_trx_id VARCHAR(40) NULL,
   subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
   discount DECIMAL(10,2) NOT NULL DEFAULT 0,
   coupon_code VARCHAR(40) NULL,

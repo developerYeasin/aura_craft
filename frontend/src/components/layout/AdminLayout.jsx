@@ -3,7 +3,9 @@ import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader } from '../ui/index.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { useTheme } from '../../hooks/useTheme.js';
+import { useI18n } from '../../i18n/index.jsx';
 import BackToTop from '../ui/BackToTop.jsx';
 import BrandLogo from '../ui/BrandLogo.jsx';
 import {
@@ -11,20 +13,21 @@ import {
   IconReceipt, IconUsers, IconSettings, IconInfinity, IconStore, IconShield, IconTrendUp, IconBox, IconTruck,
 } from '../ui/Icons.jsx';
 
+// `key` and `group` are admin.* translation keys.
 const LINKS = [
-  { to: '/admin', label: 'Dashboard', Icon: IconDashboard, end: true, group: 'Overview' },
-  { to: '/admin/products', label: 'Products', Icon: IconGem, group: 'Catalog' },
-  { to: '/admin/categories', label: 'Categories', Icon: IconFolder },
-  { to: '/admin/media', label: 'Media', Icon: IconBox },
-  { to: '/admin/orders', label: 'Orders', Icon: IconReceipt, group: 'Sales' },
-  { to: '/admin/customers', label: 'Customers', Icon: IconUsers },
-  { to: '/admin/coupons', label: 'Coupons', Icon: IconTag },
-  { to: '/admin/delivery', label: 'Delivery Zones', Icon: IconTruck },
-  { to: '/admin/fraud', label: 'Fraud Prevention', Icon: IconShield, group: 'Protection' },
-  { to: '/admin/marketing', label: 'SEO & Marketing', Icon: IconTrendUp, group: 'Growth' },
-  { to: '/admin/team', label: 'Team', Icon: IconUsers, group: 'Site' },
-  { to: '/admin/settings', label: 'Settings', Icon: IconSettings },
-  { to: '/admin/users', label: 'Users', Icon: IconInfinity, immortalOnly: true, group: 'Immortal' },
+  { to: '/admin', key: 'dashboard', Icon: IconDashboard, end: true, group: 'overview' },
+  { to: '/admin/products', key: 'products', Icon: IconGem, group: 'catalog' },
+  { to: '/admin/categories', key: 'categories', Icon: IconFolder },
+  { to: '/admin/media', key: 'media', Icon: IconBox },
+  { to: '/admin/orders', key: 'orders', Icon: IconReceipt, group: 'sales' },
+  { to: '/admin/customers', key: 'customers', Icon: IconUsers },
+  { to: '/admin/coupons', key: 'coupons', Icon: IconTag },
+  { to: '/admin/delivery', key: 'delivery', Icon: IconTruck },
+  { to: '/admin/fraud', key: 'fraud', Icon: IconShield, group: 'protection' },
+  { to: '/admin/marketing', key: 'marketing', Icon: IconTrendUp, group: 'growth' },
+  { to: '/admin/team', key: 'team', Icon: IconUsers, group: 'site' },
+  { to: '/admin/settings', key: 'settings', Icon: IconSettings },
+  { to: '/admin/users', key: 'users', Icon: IconInfinity, immortalOnly: true, group: 'immortal' },
 ];
 
 const AdminLayout = () => {
@@ -32,11 +35,13 @@ const AdminLayout = () => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
+  const { t } = useI18n();
 
   if (loading) return <Loader label="যাচাই করা হচ্ছে…" />;
   if (!user) return <Navigate to="/admin/login" state={{ from: location.pathname }} replace />;
 
   const links = LINKS.filter((l) => !l.immortalOnly || isImmortal);
+  const themeLabel = theme === 'dark' ? t('common.lightMode') : t('common.darkMode');
 
   return (
     <div className="admin">
@@ -47,7 +52,7 @@ const AdminLayout = () => {
 
         {links.map((link) => (
           <div key={link.to} style={{ display: 'contents' }}>
-            {link.group && <span className="admin__label">{link.group}</span>}
+            {link.group && <span className="admin__label">{t(`admin.${link.group}`)}</span>}
             <NavLink
               to={link.to}
               end={link.end}
@@ -55,7 +60,7 @@ const AdminLayout = () => {
               className={({ isActive }) => `admin__link${isActive ? ' is-active' : ''}`}
             >
               <link.Icon width={17} height={17} />
-              <span>{link.label}</span>
+              <span>{t(`admin.${link.key}`)}</span>
             </NavLink>
           </div>
         ))}
@@ -70,11 +75,11 @@ const AdminLayout = () => {
           </div>
           <Link to="/" className="admin__link">
             <IconStore width={17} height={17} />
-            <span>ওয়েবসাইট দেখুন</span>
+            <span>{t('admin.viewSite')}</span>
           </Link>
           <button type="button" className="admin__link" style={{ width: '100%' }} onClick={logout}>
             <IconLogout width={16} height={16} />
-            <span>Logout</span>
+            <span>{t('admin.logout')}</span>
           </button>
         </div>
       </aside>
@@ -87,16 +92,17 @@ const AdminLayout = () => {
             type="button"
             className="nav__btn nav__burger"
             onClick={() => setOpen((v) => !v)}
-            aria-label="মেনু"
+            aria-label={t('admin.menu')}
           >
             {open ? <IconClose /> : <IconMenu />}
           </button>
+          <LanguageSwitcher />
           <button
             type="button"
             className="nav__btn"
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'লাইট মোড চালু করুন' : 'ডার্ক মোড চালু করুন'}
-            title={theme === 'dark' ? 'লাইট মোড' : 'ডার্ক মোড'}
+            aria-label={themeLabel}
+            title={themeLabel}
           >
             {theme === 'dark' ? <IconSun /> : <IconMoon />}
           </button>

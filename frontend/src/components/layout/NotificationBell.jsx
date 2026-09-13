@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -30,18 +31,32 @@ const NotificationBell = () => {
   const [open, setOpen] = useState(false);
   const [enabling, setEnabling] = useState(false);
   const wrapRef = useRef(null);
+  const panelRef = useRef(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
 
+  // The panel lives in <body>, so it is anchored to the bell by measuring it.
   useEffect(() => {
     if (!open) return undefined;
+    const place = () => {
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (rect) setPos({ top: rect.bottom + 8, right: Math.max(12, window.innerWidth - rect.right) });
+    };
+    place();
+    const inside = (target) =>
+      wrapRef.current?.contains(target) || panelRef.current?.contains(target);
     const onDown = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (!inside(e.target)) setOpen(false);
     };
     const onKey = (e) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onDown);
+    document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, { passive: true });
     return () => {
-      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place);
     };
   }, [open]);
 
@@ -77,8 +92,8 @@ const NotificationBell = () => {
         <span className={`notif__dot${connected ? ' is-live' : ''}`} title={connected ? 'লাইভ' : 'সংযোগ নেই'} />
       </button>
 
-      {open && (
-        <div className="notif__panel">
+      {open && createPortal(
+        <div className="notif__panel notif__panel--portal" ref={panelRef} style={{ top: pos.top, right: pos.right }}>
           <header className="notif__head">
             <div>
               <b>নোটিফিকেশন</b>
@@ -158,7 +173,8 @@ const NotificationBell = () => {
               <IconTrash width={13} height={13} /> মুছুন
             </button>
           </footer>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

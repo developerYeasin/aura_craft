@@ -96,6 +96,8 @@ export const place = async (payload, context = {}) => {
         delivery_zone: delivery.zoneName,
         note: payload.note || null,
         payment_method: payload.payment_method,
+        payment_sender: payload.payment_method === 'cod' ? null : payload.payment_sender || null,
+        payment_trx_id: payload.payment_method === 'cod' ? null : payload.payment_trx_id?.toUpperCase() || null,
         subtotal,
         discount,
         coupon_code: couponCode,

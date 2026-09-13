@@ -13,6 +13,9 @@ export const createOrderSchema = z.object({
   website: z.string().max(200).optional().nullable(),
   coupon_code: z.string().trim().max(40).optional().nullable(),
   payment_method: z.enum(['cod', 'bkash', 'nagad']).default('cod'),
+  // Manual mobile-banking payments: the customer sends money first, then gives us these to verify.
+  payment_sender: z.string().trim().max(40).optional().nullable(),
+  payment_trx_id: z.string().trim().max(40).optional().nullable(),
   note: z.string().optional().nullable(),
   items: z
     .array(
@@ -23,6 +26,14 @@ export const createOrderSchema = z.object({
       })
     )
     .min(1, 'At least one item is required'),
+}).superRefine((data, ctx) => {
+  if (data.payment_method === 'cod') return;
+  if (!/^[\d+\-\s]{6,}$/.test(data.payment_sender || '')) {
+    ctx.addIssue({ code: 'custom', path: ['payment_sender'], message: 'Enter the number you paid from' });
+  }
+  if (!/^[A-Za-z0-9]{6,40}$/.test(data.payment_trx_id || '')) {
+    ctx.addIssue({ code: 'custom', path: ['payment_trx_id'], message: 'Enter a valid transaction ID' });
+  }
 });
 
 export const updateStatusSchema = z.object({

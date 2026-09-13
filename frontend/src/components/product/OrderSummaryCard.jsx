@@ -58,6 +58,8 @@ const OrderSummaryCard = ({ order }) => {
         <li><b>{t('order.address')}</b> {order.address}{order.city ? `, ${order.city}` : ''}</li>
         <li><b>{t('order.area')}</b> {areaLabel}</li>
         <li><b>{t('order.payment')}</b> {t(`checkout.${order.payment_method}`)}</li>
+        {order.payment_sender && <li><b>{t('order.sender')}</b> {order.payment_sender}</li>}
+        {order.payment_trx_id && <li><b>{t('order.trxId')}</b> <span className="num">{order.payment_trx_id}</span></li>}
         {order.note && <li><b>{t('order.note')}</b> {order.note}</li>}
       </ul>
     </div>

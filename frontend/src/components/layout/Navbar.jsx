@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../context/StoreContext.jsx';
 import { useCart } from '../../context/CartContext.jsx';
@@ -7,6 +7,7 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { useI18n } from '../../i18n/index.jsx';
 import BrandLogo from '../ui/BrandLogo.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
+import CartDrawer from './CartDrawer.jsx';
 import {
   IconCart, IconSearch, IconUser, IconMenu, IconClose, IconHeart, IconSun, IconMoon,
   IconStore, IconGrid, IconUsers,
@@ -40,6 +41,8 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [term, setTerm] = useState('');
+  const [cartOpen, setCartOpen] = useState(false);
+  const closeCart = useCallback(() => setCartOpen(false), []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -56,6 +59,7 @@ const Navbar = () => {
   useEffect(() => {
     setDrawerOpen(false);
     setSearchOpen(false);
+    setCartOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -149,10 +153,10 @@ const Navbar = () => {
             <Link to="/track" className="nav__btn nav__btn--tuck" aria-label={t('common.trackOrder')}>
               <IconUser />
             </Link>
-            <Link to="/cart" className="nav__btn" aria-label={t('common.cart')}>
+            <button type="button" className="nav__btn" onClick={() => setCartOpen(true)} aria-label={t('common.cart')}>
               <IconCart />
               {count > 0 && <span className="nav__count">{count}</span>}
-            </Link>
+            </button>
             <button
               type="button"
               className="nav__btn nav__burger"
@@ -214,6 +218,8 @@ const Navbar = () => {
           </aside>
         </>
       )}
+
+      <CartDrawer open={cartOpen} onClose={closeCart} />
     </>
   );
 };

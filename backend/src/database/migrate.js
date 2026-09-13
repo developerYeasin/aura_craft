@@ -59,6 +59,8 @@ const run = async () => {
     ['orders', 'coupon_code', 'VARCHAR(40) NULL AFTER courier_status'],
     ['orders', 'discount', 'DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER subtotal'],
     ['orders', 'delivery_zone', 'VARCHAR(140) NULL AFTER delivery_area'],
+    ['orders', 'payment_sender', 'VARCHAR(40) NULL AFTER payment_method'],
+    ['orders', 'payment_trx_id', 'VARCHAR(40) NULL AFTER payment_sender'],
     ['order_items', 'original_price', 'DECIMAL(10,2) NULL AFTER unit_price'],
     ['products', 'video_url', 'VARCHAR(500) NULL AFTER description'],
     ['products', 'discount_type', "ENUM('none','percent','fixed') NOT NULL DEFAULT 'none' AFTER compare_price"],
