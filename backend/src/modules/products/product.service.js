@@ -3,6 +3,7 @@ import { query } from '../../config/db.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { slugify } from '../../utils/slug.js';
 import { discountError } from '../../utils/pricing.js';
+import { notify } from '../notifications/notification.service.js';
 
 /** Checks the discount against the price it will apply to (the merged row on edit). */
 const assertDiscount = (row) => {
@@ -54,7 +55,15 @@ export const create = async (payload) => {
   const { data, images = [] } = prepare(payload);
   assertDiscount(data);
   const id = await repo.insert(data, images);
-  return repo.findByKey(id, { activeOnly: false });
+  const product = await repo.findByKey(id, { activeOnly: false });
+  notify({
+    type: 'product',
+    title: 'নতুন প্রোডাক্ট যোগ হয়েছে',
+    body: product.name,
+    link: '/admin/products',
+    meta: { productId: product.id },
+  });
+  return product;
 };
 
 export const edit = async (id, payload) => {
@@ -63,7 +72,19 @@ export const edit = async (id, payload) => {
   const { data, images } = prepare(payload);
   assertDiscount({ ...existing, ...data });
   await repo.update(existing.id, data, images);
-  return repo.findByKey(existing.id, { activeOnly: false });
+  const product = await repo.findByKey(existing.id, { activeOnly: false });
+  const visibility =
+    data.is_active !== undefined && Number(data.is_active) !== Number(existing.is_active)
+      ? (Number(data.is_active) ? ' · এখন দৃশ্যমান' : ' · লুকানো হয়েছে')
+      : '';
+  notify({
+    type: 'product',
+    title: 'প্রোডাক্ট আপডেট হয়েছে',
+    body: `${product.name}${visibility}`,
+    link: '/admin/products',
+    meta: { productId: product.id },
+  });
+  return product;
 };
 
 /**

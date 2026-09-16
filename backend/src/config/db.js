@@ -23,6 +23,10 @@ export const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 10_000,
   charset: 'utf8mb4_unicode_ci',
+  // The MySQL server keeps DATETIME in UTC (NOW() = UTC_TIMESTAMP()). mysql2's default
+  // 'local' reads those values in the Node host's zone, which on a +06:00 machine made
+  // every timestamp six hours old — fresh notifications showed as "৬ ঘণ্টা আগে".
+  timezone: 'Z',
 });
 
 /** Connection-level failures worth transparently retrying once on a fresh socket. */

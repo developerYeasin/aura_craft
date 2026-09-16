@@ -63,6 +63,7 @@ export default {
     operatedFrom: 'Operated from Dhaka, Bangladesh',
   },
   product: {
+    views: 'Viewed {n} times',
     variant: 'Size / Variant',
     quantity: 'Quantity',
     decrease: 'Decrease',
@@ -274,6 +275,12 @@ export default {
     accent: 'team',
     text: 'Creative, dedicated, always by your side',
     empty: 'No team members added yet',
+    viewProfile: 'View profile',
+    profile: 'Profile',
+    views: '{n} profile views',
+    joined: 'Joined {year}',
+    close: 'Close',
+    contact: 'Connect',
   },
   wishlist: {
     title: 'Wishlist',

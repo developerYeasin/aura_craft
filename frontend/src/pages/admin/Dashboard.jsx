@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../../api/index.js';
+import { useNotifications } from '../../context/NotificationContext.jsx';
+import ViewAnalytics from '../../components/admin/ViewAnalytics.jsx';
 import { Loader, ErrorBox } from '../../components/ui/index.jsx';
 import {
   IconGem, IconReceipt, IconUsers, IconWallet, IconClock, IconAlert,
@@ -100,6 +102,26 @@ const Dashboard = () => {
     load(range, { quiet: Boolean(stats) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
+
+  // A new order / stock / product notification means these figures are stale —
+  // reload quietly (debounced, so a burst of events costs one request).
+  const { subscribe } = useNotifications();
+  const [liveTick, setLiveTick] = useState(0);
+  useEffect(() => {
+    let timer;
+    const off = subscribe((n) => {
+      if (!['order', 'low_stock', 'product'].includes(n.type)) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        load(range, { quiet: true });
+        setLiveTick((t) => t + 1);
+      }, 800);
+    });
+    return () => {
+      clearTimeout(timer);
+      off();
+    };
+  }, [subscribe, load, range]);
 
   if (loading) return <Loader />;
   if (error && !stats) return <ErrorBox message={error} onRetry={() => load()} />;
@@ -471,6 +493,8 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <ViewAnalytics range={range} refreshKey={liveTick} />
 
       <div className="quick-actions">
         <Link to="/admin/products" className="btn btn--sm"><IconGem width={14} height={14} /> নতুন প্রোডাক্ট</Link>

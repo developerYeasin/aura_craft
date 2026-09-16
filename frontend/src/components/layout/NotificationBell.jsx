@@ -5,11 +5,11 @@ import { useNotifications } from '../../context/NotificationContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import {
   IconBell, IconBellOff, IconVolume, IconVolumeOff, IconCheck,
-  IconTrash, IconReceipt, IconAlert, IconSparkle,
+  IconTrash, IconReceipt, IconAlert, IconSparkle, IconGem,
 } from '../ui/Icons.jsx';
 import { enNum } from '../../utils/format.js';
 
-const TYPE_ICON = { order: IconReceipt, low_stock: IconAlert, system: IconSparkle };
+const TYPE_ICON = { order: IconReceipt, low_stock: IconAlert, product: IconGem, system: IconSparkle };
 
 /** "৫ মিনিট আগে" style relative time. */
 const timeAgo = (value) => {

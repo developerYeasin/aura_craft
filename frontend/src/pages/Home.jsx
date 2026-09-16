@@ -10,6 +10,7 @@ import {
   IconAward, IconHandshake, IconChat, IconWallet, IconRefresh, IconBox, categoryIcon,
 } from '../components/ui/Icons.jsx';
 import { imageOf, toBn } from '../utils/format.js';
+import { BrandMark, BrandWordmark } from '../components/ui/BrandLogo.jsx';
 
 const TRUST = [IconShield, IconGem, IconLock, IconTruck, IconHeadset];
 const WHY = [IconAward, IconHandshake, IconChat, IconWallet, IconRefresh];
@@ -57,6 +58,10 @@ const Home = () => {
 
         <div className="container cover__inner">
           <div className="cover__copy">
+            <div className="cover__brand" aria-hidden="true">
+              <BrandMark size={40} animated />
+              <BrandWordmark name={settings?.site_name || 'Aura Craft'} animated />
+            </div>
             <Reveal>
               <span className="eyebrow">{t('home.heroEyebrow')}</span>
             </Reveal>

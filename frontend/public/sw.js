@@ -14,8 +14,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'AuraCraft', {
       body: data.body || '',
-      icon: '/logo.svg',
-      badge: '/logo.svg',
+      icon: '/logo.svg?v=2',
+      badge: '/logo.svg?v=2',
       tag: data.type || 'auracraft',
       renotify: true,
       data: { link: data.link || '/admin' },

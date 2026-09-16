@@ -7,7 +7,7 @@ import { env } from '../config/env.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fresh = process.argv.includes('--fresh');
 
-const DROP_ORDER = ['delivery_zones', 'notifications', 'push_subscriptions', 'order_items', 'orders', 'product_images', 'products', 'categories', 'team_members', 'settings', 'users'];
+const DROP_ORDER = ['view_events', 'delivery_zones', 'notifications', 'push_subscriptions', 'order_items', 'orders', 'product_images', 'products', 'categories', 'team_members', 'settings', 'users'];
 
 // Not exported: importing this file runs the migration.
 const DEFAULT_ZONES = [
@@ -65,6 +65,15 @@ const run = async () => {
     ['products', 'video_url', 'VARCHAR(500) NULL AFTER description'],
     ['products', 'discount_type', "ENUM('none','percent','fixed') NOT NULL DEFAULT 'none' AFTER compare_price"],
     ['products', 'discount_value', 'DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER discount_type'],
+    ['products', 'view_count', 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER is_active'],
+    ['team_members', 'tag', 'VARCHAR(80) NULL AFTER role'],
+    ['team_members', 'joined_year', 'SMALLINT UNSIGNED NULL AFTER tag'],
+    ['team_members', 'responsibilities', 'TEXT NULL AFTER bio'],
+    ['team_members', 'email', 'VARCHAR(160) NULL AFTER photo_url'],
+    ['team_members', 'phone', 'VARCHAR(40) NULL AFTER email'],
+    ['team_members', 'website_url', 'VARCHAR(300) NULL AFTER phone'],
+    ['team_members', 'linkedin_url', 'VARCHAR(300) NULL AFTER website_url'],
+    ['team_members', 'profile_view_count', 'INT UNSIGNED NOT NULL DEFAULT 0 AFTER is_active'],
   ];
   for (const [table, column, definition] of ADDED_COLUMNS) {
     const [[{ found }]] = await conn.query(
@@ -87,6 +96,17 @@ const run = async () => {
   if (areaCol?.type === 'enum') {
     await conn.query("ALTER TABLE orders MODIFY delivery_area VARCHAR(40) NOT NULL DEFAULT 'inside_dhaka'");
     console.log('• Widened orders.delivery_area');
+  }
+
+  // notifications.type was an ENUM; new event kinds (product, …) need a free string.
+  const [[typeCol]] = await conn.query(
+    `SELECT DATA_TYPE AS type FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'notifications' AND COLUMN_NAME = 'type'`,
+    [env.db.name]
+  );
+  if (typeCol?.type === 'enum') {
+    await conn.query("ALTER TABLE notifications MODIFY type VARCHAR(32) NOT NULL DEFAULT 'system'");
+    console.log('• Widened notifications.type');
   }
 
   const [[{ zones }]] = await conn.query('SELECT COUNT(*) AS zones FROM delivery_zones');

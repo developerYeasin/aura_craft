@@ -7,7 +7,7 @@ const PRODUCT_FIELDS = `
   p.id, p.category_id, p.name, p.slug, p.sku, p.short_description, p.description, p.video_url,
   p.price, p.compare_price, p.discount_type, p.discount_value, ${FINAL_PRICE} AS final_price,
   p.stock, p.material, p.color, p.size_options, p.warranty,
-  p.rating, p.rating_count, p.is_featured, p.is_active, p.created_at,
+  p.rating, p.rating_count, p.is_featured, p.is_active, p.view_count, p.created_at,
   c.name AS category_name, c.name_bn AS category_name_bn, c.slug AS category_slug, c.icon AS category_icon,
   (SELECT url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC LIMIT 1) AS image`;
 
@@ -19,6 +19,7 @@ const SORTS = {
   name_asc: 'p.name ASC',
   rating: 'p.rating DESC, p.rating_count DESC',
   featured: 'p.is_featured DESC, p.created_at DESC',
+  views: 'p.view_count DESC, p.id DESC',
 };
 
 const buildFilters = (filters) => {

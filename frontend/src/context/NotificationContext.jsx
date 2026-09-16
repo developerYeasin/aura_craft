@@ -56,6 +56,12 @@ export const NotificationProvider = ({ children }) => {
   const [pushReady, setPushReady] = useState(false);
 
   const sourceRef = useRef(null);
+  // Read inside the stream handlers so toggling sound never tears the stream down.
+  const soundRef = useRef(soundOn);
+  soundRef.current = soundOn;
+  const listenersRef = useRef(new Set());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const toggleSound = useCallback(() => {
     setSoundOn((on) => {
@@ -64,29 +70,58 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
+  /**
+   * Pages (e.g. the dashboard) subscribe here to reload their own data when a
+   * notification lands. Returns an unsubscribe function.
+   */
+  const subscribe = useCallback((fn) => {
+    listenersRef.current.add(fn);
+    return () => listenersRef.current.delete(fn);
+  }, []);
+
+  const emit = useCallback((n) => {
+    listenersRef.current.forEach((fn) => {
+      try {
+        fn(n);
+      } catch {
+        /* a listener failure must not break the stream */
+      }
+    });
+  }, []);
+
+  const userId = user?.id;
+
+  /** Server is the source of truth: list + unread count survive refreshes and missed events. */
   const refresh = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
       const res = await notificationApi.list();
       setItems(res.data || []);
-      setUnread(res.meta?.unread || 0);
+      setUnread(Number(res.meta?.unread) || 0);
     } catch {
-      /* the stream will resync on reconnect */
+      /* the stream or the next poll will resync */
     }
-  }, [user]);
+  }, [userId]);
 
   // Reflect a subscription registered in an earlier session.
   useEffect(() => {
-    if (!('serviceWorker' in navigator) || !user) return;
+    if (!('serviceWorker' in navigator) || !userId) return;
     navigator.serviceWorker.getRegistration()
       .then((reg) => reg?.pushManager.getSubscription())
       .then((sub) => setPushReady(Boolean(sub)))
       .catch(() => {});
-  }, [user]);
+  }, [userId]);
 
   /* ------------------------------------------------ live stream */
+  // Keyed on the user id, not the user object, so re-fetching the profile does not
+  // reconnect. Three layers keep the panel correct:
+  //  1. SSE for instant delivery, resyncing from the API every time it (re)opens;
+  //  2. a manual reconnect with backoff when the browser gives up on the stream
+  //     (it never retries after a non-200 such as an expired token or a proxy error);
+  //  3. a slow poll + focus refresh, because some hosts/proxies buffer SSE and the
+  //     events then never arrive until the page is reloaded.
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       sourceRef.current?.close();
       sourceRef.current = null;
       setConnected(false);
@@ -95,49 +130,103 @@ export const NotificationProvider = ({ children }) => {
       return undefined;
     }
 
+    let disposed = false;
+    let retryTimer = null;
+    let attempt = 0;
+
     refresh();
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return undefined;
-
-    const source = new EventSource(`${API_URL}/notifications/stream?token=${encodeURIComponent(token)}`);
-    sourceRef.current = source;
-
-    source.addEventListener('ready', () => setConnected(true));
-
-    source.addEventListener('notification', (event) => {
-      const n = JSON.parse(event.data);
-      setItems((list) => [n, ...list].slice(0, 50));
-      setUnread((c) => c + 1);
-      if (soundOn) playChime();
+    const onNotification = (event) => {
+      let n;
+      try {
+        n = JSON.parse(event.data);
+      } catch {
+        return;
+      }
+      // A resync after reconnect can already contain this id — never show it twice.
+      if (itemsRef.current.some((x) => x.id === n.id)) return;
+      setItems((list) => (list.some((x) => x.id === n.id) ? list : [n, ...list].slice(0, 50)));
+      // Optimistic; the server's `unread` frame that follows sets the exact count.
+      if (!n.is_read) setUnread((c) => c + 1);
+      emit(n);
+      if (soundRef.current) playChime();
 
       // The in-app panel covers a visible tab; a system notification is for when it isn't.
       if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        const notice = new Notification(n.title, { body: n.body || '', icon: '/logo.svg', tag: `n-${n.id}` });
+        const notice = new Notification(n.title, { body: n.body || '', icon: '/logo.svg?v=2', tag: `n-${n.id}` });
         notice.onclick = () => {
           window.focus();
           if (n.link) window.location.assign(n.link);
         };
       }
-    });
+    };
 
-    source.addEventListener('unread', (event) => setUnread(JSON.parse(event.data).count));
-    source.onerror = () => setConnected(false);
-    source.onopen = () => setConnected(true);
+    const connect = () => {
+      if (disposed) return;
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) return;
+
+      const source = new EventSource(`${API_URL}/notifications/stream?token=${encodeURIComponent(token)}`);
+      sourceRef.current = source;
+
+      const opened = () => {
+        attempt = 0;
+        setConnected(true);
+      };
+      source.addEventListener('ready', () => {
+        opened();
+        refresh(); // catch anything created while we were disconnected
+      });
+      source.onopen = opened;
+      source.addEventListener('notification', onNotification);
+      source.addEventListener('unread', (event) => {
+        try {
+          setUnread(Number(JSON.parse(event.data).count) || 0);
+        } catch {
+          /* ignore malformed frame */
+        }
+      });
+      source.onerror = () => {
+        setConnected(false);
+        if (source.readyState === EventSource.CLOSED && !disposed) {
+          source.close();
+          attempt += 1;
+          const delay = Math.min(60_000, 3000 * 2 ** Math.min(attempt, 5));
+          retryTimer = setTimeout(connect, delay);
+        }
+      };
+    };
+
+    connect();
+
+    const poll = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, 45_000);
+    const onVisible = () => {
+      if (!document.hidden) refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
 
     return () => {
-      source.close();
+      disposed = true;
+      clearTimeout(retryTimer);
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+      sourceRef.current?.close();
       sourceRef.current = null;
       setConnected(false);
     };
-  }, [user, refresh, soundOn]);
+  }, [userId, refresh, emit]);
 
   /* ------------------------------------------------ actions */
   const markRead = useCallback(async (id) => {
     setItems((list) => list.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
     setUnread((c) => Math.max(0, c - 1));
     try {
-      await notificationApi.markRead(id);
+      const res = await notificationApi.markRead(id);
+      if (res.data?.unread !== undefined) setUnread(Number(res.data.unread) || 0);
     } catch {
       refresh();
     }
@@ -222,10 +311,10 @@ export const NotificationProvider = ({ children }) => {
   const value = useMemo(
     () => ({
       items, unread, connected, permission, soundOn, pushReady,
-      refresh, markRead, markAllRead, clearAll, enablePush, toggleSound,
+      refresh, markRead, markAllRead, clearAll, enablePush, toggleSound, subscribe,
       test: () => notificationApi.test(),
     }),
-    [items, unread, connected, permission, soundOn, pushReady, refresh, markRead, markAllRead, clearAll, enablePush, toggleSound]
+    [items, unread, connected, permission, soundOn, pushReady, refresh, markRead, markAllRead, clearAll, enablePush, toggleSound, subscribe]
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

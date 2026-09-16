@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS products (
   rating_count INT NOT NULL DEFAULT 0,
   is_featured TINYINT(1) NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  view_count INT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
@@ -137,14 +138,22 @@ CREATE TABLE IF NOT EXISTS team_members (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(140) NOT NULL,
   role VARCHAR(140) NOT NULL,
+  tag VARCHAR(80) NULL,
+  joined_year SMALLINT UNSIGNED NULL,
   bio TEXT NULL,
+  responsibilities TEXT NULL,
   photo_url VARCHAR(500) NULL,
+  email VARCHAR(160) NULL,
+  phone VARCHAR(40) NULL,
+  website_url VARCHAR(300) NULL,
+  linkedin_url VARCHAR(300) NULL,
   facebook_url VARCHAR(300) NULL,
   instagram_url VARCHAR(300) NULL,
   twitter_url VARCHAR(300) NULL,
   youtube_url VARCHAR(300) NULL,
   sort_order INT NOT NULL DEFAULT 0,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
+  profile_view_count INT UNSIGNED NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -157,7 +166,7 @@ CREATE TABLE IF NOT EXISTS settings (
 
 CREATE TABLE IF NOT EXISTS notifications (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  type ENUM('order','low_stock','system') NOT NULL DEFAULT 'system',
+  type VARCHAR(32) NOT NULL DEFAULT 'system',
   title VARCHAR(180) NOT NULL,
   body VARCHAR(400) NULL,
   link VARCHAR(255) NULL,
@@ -236,4 +245,18 @@ CREATE TABLE IF NOT EXISTS fraud_events (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_fraud_events_created (created_at),
   INDEX idx_fraud_events_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- One row per counted view. The counters on products/team_members are the fast
+-- read path; this log backs duplicate-view protection and time-series analytics
+-- (daily views, unique visitors, history) without touching the entity tables.
+CREATE TABLE IF NOT EXISTS view_events (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  entity_type VARCHAR(24) NOT NULL,
+  entity_id INT UNSIGNED NOT NULL,
+  visitor_key CHAR(64) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_views_entity (entity_type, entity_id, created_at),
+  INDEX idx_views_visitor (visitor_key, entity_type, entity_id, created_at),
+  INDEX idx_views_created (entity_type, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

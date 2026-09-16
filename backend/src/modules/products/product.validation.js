@@ -5,7 +5,7 @@ const optionalString = z.string().optional().nullable();
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(60).default(12),
-  sort: z.enum(['newest', 'oldest', 'price_asc', 'price_desc', 'name_asc', 'rating', 'featured']).default('newest'),
+  sort: z.enum(['newest', 'oldest', 'price_asc', 'price_desc', 'name_asc', 'rating', 'featured', 'views']).default('newest'),
   search: z.string().trim().optional(),
   category: z.string().trim().optional(),
   categoryId: z.coerce.number().int().optional(),

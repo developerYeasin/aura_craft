@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { trackEvent, toItem } from '../utils/tracking.js';
+import { recordView } from '../utils/views.js';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { productApi } from '../api/index.js';
 import { useCart } from '../context/CartContext.jsx';
@@ -11,7 +12,7 @@ import { DiscountBadge } from '../components/product/PriceTag.jsx';
 import { Loader, ErrorBox, Rating, Field, SectionHead, Reveal } from '../components/ui/index.jsx';
 import {
   IconMinus, IconPlus, IconCart, IconArrowRight, IconHeart,
-  IconTruck, IconWallet, IconRefresh, IconShield, categoryIcon,
+  IconTruck, IconWallet, IconRefresh, IconShield, IconEye, categoryIcon,
 } from '../components/ui/Icons.jsx';
 import { money, priceInfo, PLACEHOLDER_IMAGE, toBn } from '../utils/format.js';
 
@@ -41,6 +42,10 @@ const ProductDetails = () => {
       .get(slug)
       .then((res) => {
         setProduct(res.data);
+        // Only an opened detail page counts as a view (cards never do).
+        recordView('product', res.data?.id).then((r) => {
+          if (r?.views != null) setProduct((p) => (p && p.id === res.data.id ? { ...p, view_count: r.views } : p));
+        });
         trackEvent('view_item', {
           value: priceInfo(res.data).final,
           items: [toItem(res.data)],
@@ -150,6 +155,11 @@ const ProductDetails = () => {
             <div className="row gap-12 wrap" style={{ marginTop: 10 }}>
               <Rating value={product.rating} count={product.rating_count} />
               {product.sku && <span className="mute-2">SKU: {product.sku}</span>}
+              {Number(product.view_count) > 0 && (
+                <span className="mute-2 view-pill" title={t('product.views', { n: toBn(product.view_count) })}>
+                  <IconEye width={13} height={13} /> {t('product.views', { n: toBn(product.view_count) })}
+                </span>
+              )}
             </div>
 
             <div className="pdp__price">

@@ -397,7 +397,7 @@ const Brand = () => {
           </div>
         </div>
         <div className="row gap-8 wrap" style={{ marginTop: 14 }}>
-          <a className="btn btn--sm" href="/logo.svg" download="aura-craft-mark.svg">
+          <a className="btn btn--sm" href="/logo.svg?v=2" download="aura-craft-mark.svg">
             {L('লোগো মার্ক (SVG) ডাউনলোড', 'Download logo mark (SVG)')}
           </a>
         </div>

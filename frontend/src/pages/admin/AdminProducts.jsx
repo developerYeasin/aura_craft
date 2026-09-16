@@ -314,6 +314,7 @@ const AdminProducts = () => {
                   <th>Category</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Views</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -372,6 +373,7 @@ const AdminProducts = () => {
                           </button>
                         </div>
                       </td>
+                      <td className="num" title="মোট ভিউ">{enNum(p.view_count || 0)}</td>
                       <td>
                         <span className={`badge ${p.is_active ? 'badge--ok' : 'badge--mute'}`}>
                           {p.is_active ? 'Active' : 'Hidden'}

@@ -105,6 +105,12 @@ export const settingApi = {
   save: (body) => client.put('/settings', body),
 };
 
+export const viewApi = {
+  // type is 'product' | 'team'; visitorId is an anonymous per-browser id.
+  record: (type, id, visitorId) => client.post(`/views/${type}/${id}`, { visitorId }),
+  summary: (params) => client.get('/views/summary', { params }),
+};
+
 export const notificationApi = {
   list: (params) => client.get('/notifications', { params }),
   markRead: (id) => client.patch(`/notifications/${id}/read`),

@@ -10,11 +10,22 @@ import { validate } from '../../middlewares/validate.js';
 const router = Router();
 const staff = [authenticate, authorize('immortal', 'admin')];
 
+// profile_view_count is deliberately absent: edits can never overwrite or reset it.
 const memberSchema = z.object({
   name: z.string().min(2).max(140),
   role: z.string().min(2).max(140),
+  tag: z.string().max(80).optional().nullable(),
+  joined_year: z.preprocess(
+    (v) => (v === '' || v === undefined ? null : v),
+    z.coerce.number().int().min(1950).max(2100).nullable()
+  ).optional(),
   bio: z.string().optional().nullable(),
+  responsibilities: z.string().optional().nullable(),
   photo_url: z.string().max(500).optional().nullable(),
+  email: z.string().max(160).optional().nullable(),
+  phone: z.string().max(40).optional().nullable(),
+  website_url: z.string().max(300).optional().nullable(),
+  linkedin_url: z.string().max(300).optional().nullable(),
   facebook_url: z.string().max(300).optional().nullable(),
   instagram_url: z.string().max(300).optional().nullable(),
   twitter_url: z.string().max(300).optional().nullable(),

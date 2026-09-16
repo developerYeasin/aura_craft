@@ -63,6 +63,7 @@ export default {
     operatedFrom: 'ঢাকা, বাংলাদেশ থেকে পরিচালিত',
   },
   product: {
+    views: '{n} বার দেখা হয়েছে',
     variant: 'সাইজ / ভ্যারিয়েন্ট',
     quantity: 'পরিমাণ',
     decrease: 'কমান',
@@ -274,6 +275,12 @@ export default {
     accent: 'টিম',
     text: 'সৃজনশীল, একনিষ্ঠ, আপনার পাশে',
     empty: 'এখনো কোনো মেম্বার যোগ করা হয়নি',
+    viewProfile: 'প্রোফাইল দেখুন',
+    profile: 'প্রোফাইল',
+    views: '{n} বার প্রোফাইল দেখা হয়েছে',
+    joined: '{year} সালে যোগদান',
+    close: 'বন্ধ করুন',
+    contact: 'যোগাযোগ',
   },
   wishlist: {
     title: 'পছন্দের তালিকা',

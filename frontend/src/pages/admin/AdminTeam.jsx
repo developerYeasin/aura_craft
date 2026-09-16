@@ -3,14 +3,22 @@ import { teamApi } from '../../api/index.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { Loader, ErrorBox, Modal, ConfirmDialog, Field, Empty } from '../../components/ui/index.jsx';
-import { IconEdit, IconTrash, IconPlus, IconUsers } from '../../components/ui/Icons.jsx';
+import { IconEdit, IconTrash, IconPlus, IconUsers, IconEye } from '../../components/ui/Icons.jsx';
+import { enNum } from '../../utils/format.js';
 import ClearAllButton from '../../components/ui/ClearAll.jsx';
 
 const emptyForm = {
   name: '',
   role: '',
+  tag: '',
+  joined_year: '',
   bio: '',
+  responsibilities: '',
   photo_url: '',
+  email: '',
+  phone: '',
+  website_url: '',
+  linkedin_url: '',
   facebook_url: '',
   instagram_url: '',
   twitter_url: '',
@@ -57,7 +65,9 @@ const AdminTeam = () => {
 
   const openEdit = (member) => {
     setEditing(member);
-    setForm({ ...emptyForm, ...member });
+    // DB nulls become '' so inputs stay controlled.
+    const filled = Object.fromEntries(Object.entries(member).map(([k, v]) => [k, v ?? '']));
+    setForm({ ...emptyForm, ...filled });
     setModalOpen(true);
   };
 
@@ -66,7 +76,9 @@ const AdminTeam = () => {
     setSaving(true);
     try {
       const payload = { ...form, sort_order: Number(form.sort_order) };
-      ['id', 'created_at', 'updated_at'].forEach((k) => delete payload[k]);
+      // View counts are server-owned; never send them back so an edit can't reset them.
+      ['id', 'created_at', 'updated_at', 'profile_view_count'].forEach((k) => delete payload[k]);
+      payload.joined_year = form.joined_year === '' || form.joined_year == null ? null : Number(form.joined_year);
       if (editing) await teamApi.update(editing.id, payload);
       else await teamApi.create(payload);
       toast.success(editing ? 'মেম্বার আপডেট হয়েছে' : 'নতুন মেম্বার যোগ হয়েছে');
@@ -117,6 +129,7 @@ const AdminTeam = () => {
                 <th>Photo</th>
                 <th>Name</th>
                 <th>Role</th>
+                <th>Profile views</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -133,7 +146,15 @@ const AdminTeam = () => {
                     />
                   </td>
                   <td>{m.name}</td>
-                  <td className="mute-2">{m.role}</td>
+                  <td className="mute-2">
+                    {m.role}
+                    {m.tag && <div className="faint" style={{ fontSize: 11.5 }}>{m.tag}</div>}
+                  </td>
+                  <td className="num">
+                    <span className="row gap-8" style={{ gap: 5 }}>
+                      <IconEye width={13} height={13} /> {enNum(m.profile_view_count || 0)}
+                    </span>
+                  </td>
                   <td>
                     <span className={`badge ${m.is_active ? 'badge--ok' : 'badge--mute'}`}>
                       {m.is_active ? 'Active' : 'Hidden'}
@@ -167,6 +188,12 @@ const AdminTeam = () => {
             <Field label="পদবি" required>
               <input className="input" value={form.role} onChange={set('role')} required />
             </Field>
+            <Field label="ট্যাগ / স্ট্যাটাস">
+              <input className="input" value={form.tag || ''} onChange={set('tag')} placeholder="যেমন: Founder, Available" maxLength={80} />
+            </Field>
+            <Field label="যোগদানের সাল">
+              <input className="input" type="number" min="1950" max="2100" value={form.joined_year ?? ''} onChange={set('joined_year')} />
+            </Field>
             <Field label="সাজানোর ক্রম">
               <input className="input" type="number" value={form.sort_order} onChange={set('sort_order')} />
             </Field>
@@ -177,6 +204,15 @@ const AdminTeam = () => {
           <Field label="সংক্ষিপ্ত পরিচিতি">
             <textarea className="textarea" value={form.bio || ''} onChange={set('bio')} />
           </Field>
+          <Field label="দায়িত্বসমূহ (প্রতি লাইনে একটি)">
+            <textarea className="textarea" value={form.responsibilities || ''} onChange={set('responsibilities')} />
+          </Field>
+          <div className="form-grid">
+            <Field label="Email"><input className="input" type="email" value={form.email || ''} onChange={set('email')} /></Field>
+            <Field label="Phone"><input className="input" value={form.phone || ''} onChange={set('phone')} /></Field>
+            <Field label="Website"><input className="input" value={form.website_url || ''} onChange={set('website_url')} /></Field>
+            <Field label="LinkedIn"><input className="input" value={form.linkedin_url || ''} onChange={set('linkedin_url')} /></Field>
+          </div>
           <div className="form-grid">
             <Field label="Facebook"><input className="input" value={form.facebook_url || ''} onChange={set('facebook_url')} /></Field>
             <Field label="Instagram"><input className="input" value={form.instagram_url || ''} onChange={set('instagram_url')} /></Field>
