@@ -12,6 +12,7 @@
 .lotus { overflow: visible; }
 .lotus > * { transform-box: view-box; transform-origin: 32px 48px; }
 .lotus__star { transform-origin: 32px 6.3px; }
+.lotus__piece, .lotus__slash { transform-box: view-box; transform-origin: 32px 46px; }
 
 .lotus--animated .lotus__outer { animation: lotus-bloom 0.9s var(--ease) 0.05s both; }
 .lotus--animated .lotus__inner { animation: lotus-bloom 0.9s var(--ease) 0.18s both; }
@@ -86,6 +87,95 @@
   84%, 100% { background-position: -30% 0; }
 }
 
+/* --------------------------------------------------------------------------
+   Hero intro: the lotus assembles piece by piece, a light blade cuts across,
+   then "Aura Craft" writes in letter by letter over a hand-drawn flourish.
+   Total ≈ 2.6s, played once per page load.
+   -------------------------------------------------------------------------- */
+.lotus--intro .lotus__center { animation: intro-center 0.7s var(--spring, var(--ease)) both; transform-origin: 32px 46px; }
+.lotus--intro .lotus__piece--il { animation: intro-in-l 0.6s var(--ease) 0.32s both; }
+.lotus--intro .lotus__piece--ir { animation: intro-in-r 0.6s var(--ease) 0.32s both; }
+.lotus--intro .lotus__piece--ol { animation: intro-out-l 0.65s var(--ease) 0.55s both; }
+.lotus--intro .lotus__piece--or { animation: intro-out-r 0.65s var(--ease) 0.55s both; }
+.lotus--intro .lotus__vein { animation: intro-fade 0.4s ease 0.85s both; }
+.lotus--intro .lotus__base { stroke-dasharray: 44; animation: lotus-draw 0.6s var(--ease) 0.9s both; }
+.lotus--intro .lotus__slash { animation: intro-slash 0.75s ease-in-out 1.15s both; }
+.lotus--intro .lotus__star { animation: lotus-star-in 0.5s var(--spring, var(--ease)) 1.45s both, lotus-twinkle 7s ease-in-out 3s infinite; }
+
+@keyframes intro-center {
+  from { opacity: 0; transform: translateY(16px) rotate(-70deg) scale(0.3); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-in-l {
+  from { opacity: 0; transform: translateX(-12px) rotate(-28deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-in-r {
+  from { opacity: 0; transform: translateX(12px) rotate(28deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-out-l {
+  from { opacity: 0; transform: translate(-18px, 6px) scale(0.7); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-out-r {
+  from { opacity: 0; transform: translate(18px, 6px) scale(0.7); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes intro-slash {
+  from { transform: translateX(0); opacity: 0; }
+  15% { opacity: 0.85; }
+  85% { opacity: 0.85; }
+  to { transform: translateX(96px); opacity: 0; }
+}
+
+.wordmark--intro { position: relative; display: inline-block; padding-bottom: 7px; }
+.wordmark--intro .wordmark__aura,
+.wordmark--intro .wordmark__craft { display: inline-block; background: none; color: inherit; }
+.wordmark--intro .wm-l {
+  display: inline-block;
+  animation: intro-write 0.5s var(--ease) calc(1.25s + var(--i) * 75ms) both;
+}
+.wordmark--intro .wordmark__craft .wm-l {
+  background: linear-gradient(105deg, #8a6424 0%, #c9a35a 35%, #fff4d6 50%, #c9a35a 65%, #8a6424 100%);
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-right: 0.04em;
+  animation:
+    intro-write 0.5s var(--ease) calc(1.25s + var(--i) * 75ms) both,
+    craft-sheen 9s ease-in-out calc(3.2s + var(--i) * 60ms) infinite;
+}
+.wm-flourish {
+  position: absolute;
+  left: 0; right: 0; bottom: -5px;
+  width: 100%; height: 9px;
+  overflow: visible;
+}
+.wm-flourish path:first-child {
+  fill: none;
+  stroke: #c9a35a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 110;
+  animation: intro-underline 0.7s var(--ease) 2.05s both;
+}
+.wm-flourish__tip { fill: #f6e3b4; transform-box: fill-box; transform-origin: center; animation: lotus-star-in 0.4s var(--ease) 2.6s both; }
+
+@keyframes intro-write {
+  from { opacity: 0; transform: translateY(0.3em) skewX(-8deg); filter: blur(3px); clip-path: inset(0 100% 0 0); }
+  60% { opacity: 1; filter: blur(0); }
+  to { opacity: 1; transform: none; filter: none; clip-path: inset(-20% -20% -20% -20%); }
+}
+@keyframes intro-underline {
+  from { stroke-dashoffset: 110; }
+  to { stroke-dashoffset: 0; }
+}
+
 /* Hero signature */
 .cover__brand {
   display: inline-flex;
@@ -109,7 +199,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lotus--animated *, .wordmark--animated .wordmark__aura, .wordmark--animated .wordmark__craft,
-  .wordmark--animated .wordmark__aura::after, .cover__brand { animation: none !important; }
+  .wordmark--animated .wordmark__aura::after, .cover__brand,
+  .lotus--intro *, .wordmark--intro .wm-l, .wm-flourish path { animation: none !important; }
+  .lotus__slash { display: none; }
   .wordmark--animated .wordmark__aura::after { display: none; }
   .wordmark--animated .wordmark__craft { background-image: var(--brand-grad); background-size: auto; }
 }

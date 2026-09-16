@@ -59,8 +59,8 @@ const Home = () => {
         <div className="container cover__inner">
           <div className="cover__copy">
             <div className="cover__brand" aria-hidden="true">
-              <BrandMark size={40} animated />
-              <BrandWordmark name={settings?.site_name || 'Aura Craft'} animated />
+              <BrandMark size={46} intro />
+              <BrandWordmark name={settings?.site_name || 'Aura Craft'} intro />
             </div>
             <Reveal>
               <span className="eyebrow">{t('home.heroEyebrow')}</span>

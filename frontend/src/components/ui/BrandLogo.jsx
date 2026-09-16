@@ -9,14 +9,22 @@ import { useId } from 'react';
  * `animated` adds the one-time bloom and the slow star twinkle (see glass.css,
  * "Brand motion"); both are disabled under prefers-reduced-motion.
  */
-export const BrandMark = ({ size = 38, className = '', animated = false }) => {
+const PETALS = {
+  outerL: 'M31 47C19 47 9.5 41 5 30.5c10.5-.4 20.5 5.6 26 16.5Z',
+  outerR: 'M33 47c12 0 21.5-6 26-16.5-10.5-.4-20.5 5.6-26 16.5Z',
+  innerL: 'M32 46c-10-3.5-16-12-15.2-23.5C26 25.5 31.2 34 32 46Z',
+  innerR: 'M32 46c10-3.5 16-12 15.2-23.5C38 25.5 32.8 34 32 46Z',
+  center: 'M32 11.5c7.2 8.4 9.6 20.5 0 34.5-9.6-14-7.2-26.1 0-34.5Z',
+};
+
+export const BrandMark = ({ size = 38, className = '', animated = false, intro = false }) => {
   const id = useId().replace(/:/g, '');
   const petal = `url(#p${id})`;
   const petalSoft = `url(#s${id})`;
   const gold = `url(#g${id})`;
   return (
     <svg
-      className={`lotus${animated ? ' lotus--animated' : ''}${className ? ` ${className}` : ''}`}
+      className={`lotus${intro ? ' lotus--intro' : animated ? ' lotus--animated' : ''}${className ? ` ${className}` : ''}`}
       width={size}
       height={size}
       viewBox="0 0 64 64"
@@ -37,16 +45,33 @@ export const BrandMark = ({ size = 38, className = '', animated = false }) => {
           <stop offset="0.5" stopColor="#c9a35a" />
           <stop offset="1" stopColor="#8a6424" />
         </linearGradient>
+        {intro && (
+          <clipPath id={`c${id}`}>
+            <path d={PETALS.outerL} />
+            <path d={PETALS.outerR} />
+            <path d={PETALS.innerL} />
+            <path d={PETALS.innerR} />
+            <path d={PETALS.center} />
+          </clipPath>
+        )}
       </defs>
       <g className="lotus__outer">
-        <path fill={petalSoft} opacity="0.85" d="M31 47C19 47 9.5 41 5 30.5c10.5-.4 20.5 5.6 26 16.5Z" />
-        <path fill={petalSoft} opacity="0.85" d="M33 47c12 0 21.5-6 26-16.5-10.5-.4-20.5 5.6-26 16.5Z" />
+        <path className="lotus__piece lotus__piece--ol" fill={petalSoft} opacity="0.85" d={PETALS.outerL} />
+        <path className="lotus__piece lotus__piece--or" fill={petalSoft} opacity="0.85" d={PETALS.outerR} />
       </g>
       <g className="lotus__inner">
-        <path fill={petal} opacity="0.92" d="M32 46c-10-3.5-16-12-15.2-23.5C26 25.5 31.2 34 32 46Z" />
-        <path fill={petal} opacity="0.92" d="M32 46c10-3.5 16-12 15.2-23.5C38 25.5 32.8 34 32 46Z" />
+        <path className="lotus__piece lotus__piece--il" fill={petal} opacity="0.92" d={PETALS.innerL} />
+        <path className="lotus__piece lotus__piece--ir" fill={petal} opacity="0.92" d={PETALS.innerR} />
       </g>
-      <path className="lotus__center" fill={petal} d="M32 11.5c7.2 8.4 9.6 20.5 0 34.5-9.6-14-7.2-26.1 0-34.5Z" />
+      <path className="lotus__center" fill={petal} d={PETALS.center} />
+      {intro && (
+        // A light blade sweeps across the finished flower, clipped to the petals.
+        <g clipPath={`url(#c${id})`}>
+          <g transform="rotate(28 32 30)">
+            <rect className="lotus__slash" x="-14" y="-12" width="5" height="90" fill="#fff" opacity="0.8" />
+          </g>
+        </g>
+      )}
       <path className="lotus__vein" fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1" strokeLinecap="round" d="M32 18.5v22" />
       <path className="lotus__base" fill="none" stroke={gold} strokeWidth="2.2" strokeLinecap="round" d="M13 51.5c11.5 5.2 26.5 5.2 38 0" />
       <path className="lotus__star" fill={gold} d="M32 1.8l1.35 3.15L36.5 6.3l-3.15 1.35L32 10.8l-1.35-3.15L27.5 6.3l3.15-1.35Z" />
@@ -58,8 +83,27 @@ export const BrandMark = ({ size = 38, className = '', animated = false }) => {
  * "Aura Craft" set as Aura + gold italic Craft. With `animated`, the words rise
  * in on load and a soft light sheen passes over them now and then.
  */
-export const BrandWordmark = ({ name = 'Aura Craft', animated = false, className = '' }) => {
+/** Splits a word into letter spans for the handwriting-style intro. */
+const Letters = ({ text, start }) =>
+  [...text].map((ch, i) => (
+    <span key={i} className="wm-l" style={{ '--i': start + i }}>{ch}</span>
+  ));
+
+export const BrandWordmark = ({ name = 'Aura Craft', animated = false, intro = false, className = '' }) => {
   const match = /^aura\s?craft$/i.test(name.trim());
+  if (intro && match) {
+    // Letters write in left to right, then a gold flourish is drawn underneath.
+    return (
+      <span className={`brand__text wordmark--intro${className ? ` ${className}` : ''}`} aria-label="Aura Craft">
+        <span className="wordmark__aura" aria-hidden="true"><Letters text="Aura" start={0} /></span>{' '}
+        <em className="wordmark__craft" aria-hidden="true"><Letters text="Craft" start={4} /></em>
+        <svg className="wm-flourish" viewBox="0 0 120 10" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M2 6 C30 2, 60 9, 104 4" />
+          <path className="wm-flourish__tip" d="M110 4l2-3 2 3-2 3Z" />
+        </svg>
+      </span>
+    );
+  }
   return (
     <span className={`brand__text${animated ? ' wordmark--animated' : ''}${className ? ` ${className}` : ''}`}>
       {match ? (
