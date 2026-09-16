@@ -467,3 +467,7 @@
 .views-row__text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .views-thumb { display: grid; place-items: center; color: var(--text-faint); }
 .views-analytics .badge { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+/* Wrapper that lets hover/tap replay the logo intro; lays out like the old fragment. */
+.brand__logo { display: contents; }
+.brand__logo:hover { cursor: pointer; }

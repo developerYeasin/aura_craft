@@ -10,7 +10,7 @@ import {
   IconAward, IconHandshake, IconChat, IconWallet, IconRefresh, IconBox, categoryIcon,
 } from '../components/ui/Icons.jsx';
 import { imageOf, toBn } from '../utils/format.js';
-import { BrandMark, BrandWordmark } from '../components/ui/BrandLogo.jsx';
+import { BrandMark, BrandWordmark, replayBrand } from '../components/ui/BrandLogo.jsx';
 
 const TRUST = [IconShield, IconGem, IconLock, IconTruck, IconHeadset];
 const WHY = [IconAward, IconHandshake, IconChat, IconWallet, IconRefresh];
@@ -58,7 +58,7 @@ const Home = () => {
 
         <div className="container cover__inner">
           <div className="cover__copy">
-            <div className="cover__brand" aria-hidden="true">
+            <div className="cover__brand" aria-hidden="true" onMouseEnter={(e) => replayBrand(e.currentTarget)} onTouchStart={(e) => replayBrand(e.currentTarget)}>
               <BrandMark size={46} intro />
               <BrandWordmark name={settings?.site_name || 'Aura Craft'} intro />
             </div>

@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 
 /**
  * Aura Craft mark: a blooming lotus in violet → rose petals over a gold base,
@@ -118,17 +118,35 @@ export const BrandWordmark = ({ name = 'Aura Craft', animated = false, intro = f
   );
 };
 
+/**
+ * Restart every CSS animation inside `node`, so hovering or tapping the logo
+ * replays its intro. Throttled so a jittery pointer can't stutter it.
+ */
+export const replayBrand = (node) => {
+  if (!node?.getAnimations || node.dataset.replaying) return;
+  node.dataset.replaying = '1';
+  node.getAnimations({ subtree: true }).forEach((anim) => {
+    anim.cancel();
+    anim.play();
+  });
+  setTimeout(() => delete node.dataset.replaying, 2800);
+};
+
 /** Mark + wordmark, used by the navbar, footer, admin sidebar and login. */
-const BrandLogo = ({ name = 'Aura Craft', sub, size = 38, animated = true }) => (
-  <>
-    <span className="brand__mark">
-      <BrandMark size={size} animated={animated} />
+const BrandLogo = ({ name = 'Aura Craft', sub, size = 38, animated = true, intro = false }) => {
+  const ref = useRef(null);
+  const replay = () => replayBrand(ref.current);
+  return (
+    <span className="brand__logo" ref={ref} onMouseEnter={replay} onTouchStart={replay}>
+      <span className="brand__mark">
+        <BrandMark size={size} animated={animated} intro={intro} />
+      </span>
+      <span>
+        <BrandWordmark name={name} animated={animated} intro={intro} />
+        {sub && <span className="brand__sub">{sub}</span>}
+      </span>
     </span>
-    <span>
-      <BrandWordmark name={name} animated={animated} />
-      {sub && <span className="brand__sub">{sub}</span>}
-    </span>
-  </>
-);
+  );
+};
 
 export default BrandLogo;

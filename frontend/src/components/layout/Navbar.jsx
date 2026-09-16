@@ -116,7 +116,7 @@ const Navbar = () => {
       <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
         <div className="container nav__inner">
           <Link to="/" className="brand" aria-label={settings.site_name || 'Aura Craft'}>
-            <BrandLogo name={settings.site_name || 'Aura Craft'} sub={t('nav.tagline')} size={36} />
+            <BrandLogo name={settings.site_name || 'Aura Craft'} sub={t('nav.tagline')} size={36} intro />
           </Link>
 
           <nav className="nav__links">
