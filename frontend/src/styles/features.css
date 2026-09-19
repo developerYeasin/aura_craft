@@ -130,7 +130,9 @@
   to { transform: translateX(96px); opacity: 0; }
 }
 
-.wordmark--intro { position: relative; display: inline-block; padding-bottom: 7px; }
+.wordmark--intro { position: relative; display: inline-block; padding-bottom: 7px; line-height: 1; }
+/* The flourish hangs below the words; keep the tagline clear of it. */
+.wordmark--intro + .brand__sub { margin-top: 5px; }
 .wordmark--intro .wordmark__aura,
 .wordmark--intro .wordmark__craft { display: inline-block; background: none; color: inherit; }
 .wordmark--intro .wm-l {
