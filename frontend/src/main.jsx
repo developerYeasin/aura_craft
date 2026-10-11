@@ -1,12 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
-import './styles/globals.css';
-import './styles/glass.css';
-import './styles/features.css';
+import SiteSuspended from './SiteSuspended.jsx';
 
+// Site suspended pending payment. To restore, render <App /> again (see git history).
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <SiteSuspended />
   </React.StrictMode>
 );
